@@ -1,4 +1,4 @@
-#include "core/Private/engine/Engine_Impl.h"
+#include "TerrainEngine/Private/Header/Engine_Impl.h"
 
 CTerrainEngine_Impl::CTerrainEngine_Impl
 (
@@ -24,7 +24,26 @@ CTerrainEngine_Impl::~CTerrainEngine_Impl()
 
 void CTerrainEngine_Impl::Erode(uint32_t uSteps)
 {
-    
+    FOperation op{};
+    op.OpType = EOperationTypes::Erode;
+    op.u32Arg1 = uSteps;
+
+    auto rVec = *m_pData.get();
+
+    m_vQueue.push_back(std::move(op));
+
+    for(uint32_t i = 0; i < uSteps; ++i)
+    {
+        for(uint32_t y = 0; y < m_uHeight; ++y)
+        {
+            auto my = y * m_uWidth;
+
+            for(uint32_t x = 0; x < m_uWidth; ++x)
+            {
+                rVec[my + x] = 100;
+            }
+        }
+    }
 }
 
 std::shared_ptr<std::vector<uint32_t>> CTerrainEngine_Impl::GetView()

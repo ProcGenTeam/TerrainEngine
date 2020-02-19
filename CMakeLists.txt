@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.7)
-project(TerrainEngine)
+project(TerrainEngineProject)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -16,22 +16,6 @@ if (USE_CUDA)
     add_definitions(-DTE_USE_CUDA)
 endif(USE_CUDA)
 
-set(COMMON_SOURCE_FILES
-        core/Public/common/defines.h
-        )
-
-set(PUBLIC_SOURCE_FILES
-        core/Public/engine/Engine.h
-        core/Public/renderer/Renderer.h
-        )
-
-set(PRIVATE_SOURCE_FILES
-        core/Private/engine/CuEngine_Impl.h
-        core/Private/engine/CuEngine_Impl.cu
-        core/Private/engine/Engine_Impl.h
-        core/Private/engine/Engine_Impl.cpp
-        )
-
 set(FRONT_END
     main.cpp
 )
@@ -41,12 +25,13 @@ include_directories(
         ${CMAKE_SOURCE_DIR}/core
 )
 
-
-#add_library(TerrainEngine ${COMMON_SOURCE_FILES} ${PUBLIC_SOURCE_FILES} ${PRIVATE_SOURCE_FILES})
-
-add_executable(TerrainEnginert main.cpp ${COMMON_SOURCE_FILES} ${PUBLIC_SOURCE_FILES} ${PRIVATE_SOURCE_FILES})
+add_executable(TerrainEnginert ${FRONT_END})
 
 
 target_link_libraries(TerrainEnginert
+    TerrainEngine
     ${CMAKE_THREAD_LIBS_INIT}
 )
+
+## Add Lib
+add_subdirectory(core/TerrainEngine)

@@ -1,6 +1,8 @@
+#pragma once
 #include <cstdint>
 #include <memory>
 #include <vector>
+#include "TerrainEngine/Public/Header/Operations.h"
 
 class CTerrainEngine_Impl
 {
@@ -9,6 +11,8 @@ class CTerrainEngine_Impl
         uint32_t m_uWidth;
         uint32_t m_uHeight;
         float m_fScale;
+
+        std::vector<FOperation> m_vQueue;
 
         // We could spherically ray march but that would be expensive as the generation cost of the SDF is high without optimisation 
 
@@ -25,6 +29,7 @@ class CTerrainEngine_Impl
         virtual ~CTerrainEngine_Impl();
 
         // Poll Current State
+        // 
         virtual std::shared_ptr<std::vector<uint32_t>> GetView();
 
         virtual void Erode(uint32_t uSteps);

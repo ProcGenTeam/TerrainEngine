@@ -1,3 +1,4 @@
+#pragma once
 #ifdef TE_USE_CUDA
 #include "Engine_Impl.h"
 
