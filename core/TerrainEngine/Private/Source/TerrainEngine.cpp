@@ -1,5 +1,5 @@
-#include "TerrainEngine/Public/Header/Engine.h"
-#include "TerrainEngine/Private/Header/Engine_Impl.h"
+#include "TerrainEngine/Public/Header/TerrainEngine.h"
+#include "TerrainEngine/Private/Header/TerrainEngine_Impl.h"
 
 #define Super (reinterpret_cast<CTerrainEngine_Impl*>(this->m_implementation))
 

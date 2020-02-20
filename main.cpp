@@ -1,10 +1,20 @@
 #include <iostream>
-#include "core/TerrainEngine/Public/Header/Engine.h"
+#include "core/TerrainEngine/Public/Header/TerrainEngine.h"
+#include "core/TaskEngine/Public/Header/TaskEngine.h"
 //#include "core/TerrainEngine/Private/Header/Engine_Impl.h"
+#include <iostream>
+#include <fstream>
+
 
 int main(int argc, char** argv)
 {
     auto terrainEngine = TerrainEngine::CTerrainEngine(250, 512, 512);
+    auto tasks = TerrainEngine::CTaskEngine();
+
+    tasks.RegisterNode("192.168.1.1", 6556);
+
+    // 
+
     auto view = terrainEngine.GetView();
 
     std::cout << "Holding " << view.use_count() << " views to the array" << std::endl;
@@ -12,7 +22,17 @@ int main(int argc, char** argv)
 
     terrainEngine.Erode(100);
 
+    std::cout << view->at(2) << std::endl;
 
     std::cout << "Hello :)" << std::endl;
+
+    // I'm bored, let's write to disk :)
+    {
+        std::ofstream of("out.hgt", std::ios::binary);
+        auto lPtr = *view.get();
+        of.write(reinterpret_cast<char*>(&lPtr[0]), view->size() * sizeof(lPtr[0]));
+    }
+
+
     return 0;
 }

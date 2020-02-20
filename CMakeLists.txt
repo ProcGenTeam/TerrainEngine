@@ -30,8 +30,10 @@ add_executable(TerrainEnginert ${FRONT_END})
 
 target_link_libraries(TerrainEnginert
     TerrainEngine
+    TaskEngine
     ${CMAKE_THREAD_LIBS_INIT}
 )
 
 ## Add Lib
 add_subdirectory(core/TerrainEngine)
+add_subdirectory(core/TaskEngine)

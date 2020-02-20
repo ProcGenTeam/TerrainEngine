@@ -25,7 +25,7 @@ class CTerrainEngine_Impl
     protected:
     public:
         CTerrainEngine_Impl(uint32_t uWaterLevel, uint32_t uWidth, uint32_t uHeight, float fScale = 0.001f);
-        CTerrainEngine_Impl(uint32_t uWaterLevel, std::unique_ptr<std::vector<uint32_t>> vWorld, float fScale = 0.001f);
+        CTerrainEngine_Impl(uint32_t uWaterLevel, std::unique_ptr<std::vector<uint32_t>> vWorld, uint32_t uWidth, float fScale = 0.001f);
         virtual ~CTerrainEngine_Impl();
 
         // Poll Current State

@@ -11,18 +11,18 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall")
 # Files
 set(PrivateHeaders
     Private/Header/CuEngine_Impl.h
-    Private/Header/Engine_Impl.h
+    Private/Header/TerrainEngine_Impl.h
 )
 
 set(PrivateSources
     Private/Source/CuEngine_Impl.cu
-    Private/Source/Engine_Impl.cpp
-    Private/Source/Engine.cpp
+    Private/Source/TerrainEngine_Impl.cpp
+    Private/Source/TerrainEngine.cpp
 )
 
 set(PublicHeaders
     Public/Header/Defines.h
-    Public/Header/Engine.h
+    Public/Header/TerrainEngine.h
     Public/Header/Operations.h
 )
 
