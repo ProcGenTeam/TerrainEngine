@@ -17,10 +17,12 @@ fileData = struct.unpack(str(fileLength)+"I", fileData)
 
 maxVal = max(fileData)
 
-fileData = numpy.array(fileData, dtype=numpy.uint32).reshape(-1,512)
+print(maxVal)
 
-fileData = fileData // (maxVal // 256)
+fileData = numpy.array(fileData, dtype=numpy.uint32).reshape(4096,4096)
+
+fileData = fileData // 256#// (maxVal // 256)
 
 im = Image.fromarray(fileData, 'I')
-im.show()
+#im.show()
 im.save("meme.png")

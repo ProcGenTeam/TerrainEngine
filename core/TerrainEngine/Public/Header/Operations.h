@@ -4,6 +4,7 @@
 enum class EOperationTypes : uint32_t
 {
     Erode,
+    Perlin,
 
     TOTAL_OPERATION_TYPES
 };

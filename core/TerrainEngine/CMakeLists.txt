@@ -12,12 +12,14 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall")
 set(PrivateHeaders
     Private/Header/CuEngine_Impl.h
     Private/Header/TerrainEngine_Impl.h
+    Private/Header/PerlinNoise.h
 )
 
 set(PrivateSources
     Private/Source/CuEngine_Impl.cu
     Private/Source/TerrainEngine_Impl.cpp
     Private/Source/TerrainEngine.cpp
+    Private/Source/PerlinNoise.cpp
 )
 
 set(PublicHeaders
@@ -47,5 +49,9 @@ target_include_directories(TerrainEngine PRIVATE
 
 target_link_libraries(
     TerrainEngine
+    glm
     ${CMAKE_THREAD_LIBS_INIT}
 )
+
+add_subdirectory(Test)
+add_subdirectory(${CMAKE_SOURCE_DIR}/extern/glm ./glm)
