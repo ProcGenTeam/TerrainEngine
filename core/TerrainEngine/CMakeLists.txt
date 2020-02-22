@@ -13,6 +13,8 @@ set(PrivateHeaders
     Private/Header/CuEngine_Impl.h
     Private/Header/TerrainEngine_Impl.h
     Private/Header/PerlinNoise.h
+    Private/Header/HydraulicErosion.h
+    Private/Header/Common.h
 )
 
 set(PrivateSources
@@ -20,6 +22,7 @@ set(PrivateSources
     Private/Source/TerrainEngine_Impl.cpp
     Private/Source/TerrainEngine.cpp
     Private/Source/PerlinNoise.cpp
+    Private/Source/HydraulicErosion.cpp
 )
 
 set(PublicHeaders

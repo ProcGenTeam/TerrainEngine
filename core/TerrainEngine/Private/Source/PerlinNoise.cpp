@@ -85,7 +85,8 @@ double CPerlinNoiseGen::Generate(double xCoord, double yCoord, double zCoord)
                 x),
             y),
         z);
-    return (res + 1.0) / 2.0;
+        
+    return (res + 1.0) * 0.5;
 }
 
 CPerlinNoiseGen::~CPerlinNoiseGen()

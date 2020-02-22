@@ -19,7 +19,7 @@ int main(int argc, char** argv)
     std::cout << "Holding " << view.use_count() << " views to the array" << std::endl;
     std::cout << view->size() << std::endl;
 
-    terrainEngine.Erode(100);
+    terrainEngine.Erode(0, 100);
 
     std::cout << view->at(2) << std::endl;
 
