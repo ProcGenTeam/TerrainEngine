@@ -4,31 +4,34 @@
 //#include <bits/stdint-uintn.h>
 //#include <cmath>
 #include <cstdint>
-#include <iostream>
-
-//#include "extern/glm/"
-
-#define GetInner(x) ((*x.get()).data())
 
 CTerrainEngine_Impl::CTerrainEngine_Impl
 (
     uint32_t uWaterLevel,
     uint32_t uWidth,
     uint32_t uHeight,
-    float fScale,
-    uint32_t uOverscan
+    int32_t iXOffset,
+    int32_t iYOffset,
+    float fGlobalScale,
+    uint32_t uOverscan,
+    uint32_t uFilterSize
 ) : 
     m_uWaterLevel(uWaterLevel),
-    m_uOverScan(uOverscan),
+    m_uOverScan(std::max(uOverscan, uFilterSize * 2)),
     m_uWidth(uWidth + uOverscan * 2),
     m_uHeight(uHeight + uOverscan * 2),
-    m_fScale(fScale),
-    m_bImmediateMode(false)
+    m_iXOffset(iXOffset),
+    m_iYOffset(iYOffset),
+    m_fGlobalScale(fGlobalScale),
+    m_bImmediateMode(false),
+    m_uFilterSize(uFilterSize)
 {
     // Create Default Layer
     auto temp = std::make_shared<std::vector<FLOAT_TYPE>>(std::vector<FLOAT_TYPE>(m_uHeight * m_uWidth));
     temp->resize(m_uHeight * m_uWidth);
     m_vpvData.push_back(std::move(temp));
+
+    Internal_Initialise();
     
     //m_pData = std::shared_ptr<std::vector<uint32_t>>(std::vector<uint32_t>[m_uWidth * m_uHeight]);
 }
@@ -44,15 +47,22 @@ CTerrainEngine_Impl::CTerrainEngine_Impl
     m_uWaterLevel(uWaterLevel),
     m_uOverScan(uOverscan),
     m_uWidth(uWidth),
-    m_fScale(fScale),
+    m_fGlobalScale(fScale),
     m_bImmediateMode(false)
 {
     this->m_uHeight = vWorld->size() / uWidth;
     
+    Internal_Initialise();
     // This is unique ptr
     //this->m_pData = std::move(vWorld);
 }
 
+void CTerrainEngine_Impl::Internal_Initialise()
+{
+    auto totalMemTypes = static_cast<std::underlying_type<EMemoryUseTypes>::type>(EMemoryUseTypes::TOTAL_MEMORY_TYPES);
+    m_vTotalMemoryUsed.resize(totalMemTypes);
+    m_vPeakMemoryUsed.resize(totalMemTypes);
+}
 
 CTerrainEngine_Impl::~CTerrainEngine_Impl()
 {
@@ -62,10 +72,17 @@ CTerrainEngine_Impl::~CTerrainEngine_Impl()
 ////// ////// //////
 // Poll Current State
 //
-std::shared_ptr<std::vector<FLOAT_TYPE>> CTerrainEngine_Impl::GetView()
+std::shared_ptr<std::vector<FLOAT_TYPE>> CTerrainEngine_Impl::GetView(uint32_t uLayerIndex)
 {
-    return m_vpvData[0];
+    return m_vpvData[uLayerIndex];
 }
+
+uint64_t CTerrainEngine_Impl::GetPeakMemoryUse(EMemoryUseTypes eMemoryType)
+{
+    auto index = static_cast<std::underlying_type<EMemoryUseTypes>::type>(eMemoryType);
+    return m_vPeakMemoryUsed[index];
+}
+
 
 ////// ////// //////
 // Switch Mode
@@ -87,86 +104,19 @@ void CTerrainEngine_Impl::Render()
     return;
 }
 
-uint32_t CTerrainEngine_Impl::Internal_IsIndexSafe(uint32_t uLayerIndex)
-{
-    return (uLayerIndex < this->m_vpvData.size());
-}
-
-
-////// ////// //////
-// Private Generation
-//
-void CTerrainEngine_Impl::Internal_Erode(uint32_t uLayerIndex, uint32_t uSteps)
-{
-    auto iVec = this->m_vpvData[uLayerIndex];
-    auto oVec = std::make_shared<std::vector<FLOAT_TYPE>>(std::vector<FLOAT_TYPE>(m_uHeight * m_uWidth));
-    oVec->resize(m_uHeight * m_uWidth);
-
-    auto oVecData = GetInner(oVec);
-    auto iVecData = GetInner(iVec);
-
-    auto eroder = CHydraulicErosion(m_uOverScan, 0);
-
-
-    // Buffer Rotations
-    FLOAT_TYPE* l_pBuffers[2] = {iVecData, oVecData};
-    std::shared_ptr<std::vector<FLOAT_TYPE>> l_pBufferPtrs[2] = {iVec, oVec};
-    uint8_t uBufferIndex = 0;
-
-    for(uint32_t step = 0; step < uSteps; ++step)
-    {
-        eroder.Erode(
-            l_pBuffers[uBufferIndex],
-            l_pBuffers[!uBufferIndex],
-            m_uHeight,
-            m_uWidth,
-            0.1f
-        );
-
-        // Flip the buffer
-        uBufferIndex = !uBufferIndex;
-    }
-
-    this->m_vpvData[uLayerIndex] = l_pBufferPtrs[uBufferIndex];
-}
-
-void CTerrainEngine_Impl::Internal_Perlin(uint32_t uLayerIndex, float fScale)
-{
-    if(!this->Internal_IsIndexSafe(uLayerIndex))
-    {
-        return;
-    }
-
-    auto pGen = CPerlinNoiseGen(0);
-
-    auto rVec = GetInner(this->m_vpvData[uLayerIndex]);
-    auto oneOverHeight = 1.0 / m_uHeight;
-    auto oneOverWidth = 1.0 / m_uWidth;
-
-
-    for(uint32_t y = 0; y < m_uHeight; ++y)
-    {
-        auto my = y * m_uWidth;
-        auto fy = y * oneOverHeight;
-
-        for(uint32_t x = 0; x < m_uWidth; ++x)
-        {
-            auto fx = x * oneOverWidth;
-            auto NormalVal = pGen.Generate(fx * 5 * fScale, fy * 5 * fScale, 0.01);
-
-            rVec[my + x] = NormalVal;
-        }
-    }
-}
-
 ////// ////// //////
 // Generation
 //
-void CTerrainEngine_Impl::Erode(uint32_t uLayerIndex, uint32_t uSteps)
+void CTerrainEngine_Impl::Erode(uint32_t uLayerIndex, uint32_t uSteps, uint32_t uFilterSize)
 {
+    // Memory
+    Internal_TrackMemoryLoad(sizeof(FLOAT_TYPE) * m_uHeight * m_uWidth, EMemoryUseTypes::MethodMemory);
+    Internal_TrackMemoryLoad(sizeof(glm::vec3) * m_uHeight * m_uWidth, EMemoryUseTypes::MethodMemory);
+
+    // Memory use isn't overly useful here
     if(this->m_bImmediateMode)
     {
-        Internal_Erode(uLayerIndex, uSteps);
+        Internal_Erode(uLayerIndex, uSteps, uFilterSize);
     }
     else
     {
@@ -175,6 +125,9 @@ void CTerrainEngine_Impl::Erode(uint32_t uLayerIndex, uint32_t uSteps)
         op.u32Arg1 = uSteps;
         m_vQueue.push_back(std::move(op));
     }
+
+    Internal_TrackMemoryLoad(-sizeof(FLOAT_TYPE) * m_uHeight * m_uWidth, EMemoryUseTypes::MethodMemory);
+    Internal_TrackMemoryLoad(-sizeof(glm::vec3) * m_uHeight * m_uWidth, EMemoryUseTypes::MethodMemory);
 }
 
 void CTerrainEngine_Impl::Perlin(uint32_t uLayerIndex, float fScale)
@@ -197,151 +150,217 @@ void CTerrainEngine_Impl::Perlin(uint32_t uLayerIndex, float fScale)
 ////// ////// //////
 // Layer Control
 //
-uint32_t CTerrainEngine_Impl::CreateLayer()
+ uint32_t CTerrainEngine_Impl::CreateLayer()
 {
-    auto temp = std::make_shared<std::vector<FLOAT_TYPE>>(std::vector<FLOAT_TYPE>(m_uHeight * m_uWidth));
-    temp->resize(m_uHeight * m_uWidth);
-    m_vpvData.push_back(std::move(temp));
+    // Update rolling memory use
+    Internal_TrackMemoryLoad(sizeof(FLOAT_TYPE) * m_uWidth * m_uHeight, EMemoryUseTypes::LayerMemory);
+
+    if(this->m_bImmediateMode)
+    {
+        Internal_CreateLayer();
+    }
+    else
+    {
+        FOperation op{};
+        op.OpType = EOperationTypes::CreateLayer;
+        m_vQueue.push_back(std::move(op));
+    }
 
     return m_vpvData.size() - 1;
 }
 
 void CTerrainEngine_Impl::DestroyLayer(uint32_t uLayerIndex)
 {
-    
+    // Total needs to drop
+    Internal_TrackMemoryLoad(-sizeof(FLOAT_TYPE) * m_uWidth * m_uHeight, EMemoryUseTypes::LayerMemory);
+
+    if(this->m_bImmediateMode)
+    {
+        Internal_DestroyLayer(uLayerIndex);
+    }
+    else
+    {
+        FOperation op{};
+        op.OpType = EOperationTypes::DestoryLayer;
+        op.u32Arg1 = uLayerIndex;
+        m_vQueue.push_back(std::move(op));
+    }
 }
 
 void CTerrainEngine_Impl::MixLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint32_t uOtherSrcLayer)
 {
-    auto dstVec = GetInner(this->m_vpvData[uDstLayer]);
-    auto srcVec = GetInner(this->m_vpvData[uSrcLayer]);
-    auto otsrcVec = GetInner(this->m_vpvData[uOtherSrcLayer]);
-
-
-    auto uNumItems = m_uHeight * m_uWidth;
-    for(uint32_t x = 0; x < uNumItems; ++x)
+    if(this->m_bImmediateMode)
     {
-        float sum = srcVec[x];
-        sum += otsrcVec[x];
-
-        dstVec[x] = sum * 0.5f;
+        Internal_MixLayers(uDstLayer, uSrcLayer, uOtherSrcLayer);
+    }
+    else
+    {
+        FOperation op{};
+        op.OpType = EOperationTypes::MixLayers;
+        op.u32Arg1 = uDstLayer;
+        op.u32Arg2 = uSrcLayer;
+        op.u32Arg3 = uOtherSrcLayer;
+        m_vQueue.push_back(std::move(op));
     }
 }
 
-void CTerrainEngine_Impl::MixLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint32_t uOtherSrcLayer, LayerMixer fnMixingFunction)
+void CTerrainEngine_Impl::RegisterMixingFunction(LayerMixer fnMixingFunction)
 {
-    auto dstVec = GetInner(this->m_vpvData[uDstLayer]);
-    auto srcVec = GetInner(this->m_vpvData[uSrcLayer]);
-    auto otsrcVec = GetInner(this->m_vpvData[uOtherSrcLayer]);
+    m_vMixingFunctions.push_back(fnMixingFunction);
+}
 
-
-    auto uNumItems = m_uHeight * m_uWidth;
-    for(uint32_t x = 0; x < uNumItems; ++x)
+// TODO - This way of passing functions should be updated
+// Add a Register Function routine and use a numeric
+void CTerrainEngine_Impl::MixLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint32_t uOtherSrcLayer, uint32_t uMixingFunctionIndex)
+{
+    if(this->m_bImmediateMode)
     {
-        dstVec[x] = fnMixingFunction(srcVec[x], otsrcVec[x]);
+        Internal_MixLayers(uDstLayer, uSrcLayer, uOtherSrcLayer, m_vMixingFunctions[uMixingFunctionIndex]);
+    }
+    else
+    {
+        FOperation op{};
+        op.OpType = EOperationTypes::MixLayersCustom;
+        op.u32Arg1 = uDstLayer;
+        op.u32Arg2 = uSrcLayer;
+        op.u32Arg3 = uOtherSrcLayer;
+        op.u32Arg4 = uMixingFunctionIndex;
+        m_vQueue.push_back(std::move(op));
     }
 }
 
 void CTerrainEngine_Impl::AddLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint32_t uOtherSrcLayer)
 {
-    auto dstVec = GetInner(this->m_vpvData[uDstLayer]);
-    auto srcVec = GetInner(this->m_vpvData[uSrcLayer]);
-    auto otsrcVec = GetInner(this->m_vpvData[uOtherSrcLayer]);
-
-
-    auto uNumItems = m_uHeight * m_uWidth;
-    for(uint32_t x = 0; x < uNumItems; ++x)
+    if(this->m_bImmediateMode)
     {
-        dstVec[x] = srcVec[x] + otsrcVec[x];
+        Internal_AddLayers(uDstLayer, uSrcLayer, uOtherSrcLayer);
+    }
+    else
+    {
+        FOperation op{};
+        op.OpType = EOperationTypes::AddLayers;
+        op.u32Arg1 = uDstLayer;
+        op.u32Arg2 = uSrcLayer;
+        op.u32Arg3 = uOtherSrcLayer;
+        m_vQueue.push_back(std::move(op));
     }
 }
 
 void CTerrainEngine_Impl::SubLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint32_t uOtherSrcLayer)
 {
-    auto dstVec = GetInner(this->m_vpvData[uDstLayer]);
-    auto srcVec = GetInner(this->m_vpvData[uSrcLayer]);
-    auto otsrcVec = GetInner(this->m_vpvData[uOtherSrcLayer]);
-
-
-    auto uNumItems = m_uHeight * m_uWidth;
-    for(uint32_t x = 0; x < uNumItems; ++x)
+    if(this->m_bImmediateMode)
     {
-        dstVec[x] = srcVec[x] - otsrcVec[x];
+        Internal_SubLayers(uDstLayer, uSrcLayer, uOtherSrcLayer);
+    }
+    else
+    {
+        FOperation op{};
+        op.OpType = EOperationTypes::SubLayers;
+        op.u32Arg1 = uDstLayer;
+        op.u32Arg2 = uSrcLayer;
+        op.u32Arg3 = uOtherSrcLayer;
+        m_vQueue.push_back(std::move(op));
     }
 }
 
 void CTerrainEngine_Impl::MulLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint32_t uOtherSrcLayer)
 {
-    auto dstVec = GetInner(this->m_vpvData[uDstLayer]);
-    auto srcVec = GetInner(this->m_vpvData[uSrcLayer]);
-    auto otsrcVec = GetInner(this->m_vpvData[uOtherSrcLayer]);
-
-
-    auto uNumItems = m_uHeight * m_uWidth;
-    for(uint32_t x = 0; x < uNumItems; ++x)
+    if(this->m_bImmediateMode)
     {
-        dstVec[x] = srcVec[x] * otsrcVec[x];
+        Internal_MulLayers(uDstLayer, uSrcLayer, uOtherSrcLayer);
+    }
+    else
+    {
+        FOperation op{};
+        op.OpType = EOperationTypes::MulLayers;
+        op.u32Arg1 = uDstLayer;
+        op.u32Arg2 = uSrcLayer;
+        op.u32Arg3 = uOtherSrcLayer;
+        m_vQueue.push_back(std::move(op));
     }
 }
 
 void CTerrainEngine_Impl::DivLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint32_t uOtherSrcLayer)
 {
-    auto dstVec = GetInner(this->m_vpvData[uDstLayer]);
-    auto srcVec = GetInner(this->m_vpvData[uSrcLayer]);
-    auto otsrcVec = GetInner(this->m_vpvData[uOtherSrcLayer]);
-
-
-    auto uNumItems = m_uHeight * m_uWidth;
-    for(uint32_t x = 0; x < uNumItems; ++x)
+    if(this->m_bImmediateMode)
     {
-        dstVec[x] = srcVec[x] / otsrcVec[x];
+        Internal_DivLayers(uDstLayer, uSrcLayer, uOtherSrcLayer);
+    }
+    else
+    {
+        FOperation op{};
+        op.OpType = EOperationTypes::DivLayers;
+        op.u32Arg1 = uDstLayer;
+        op.u32Arg2 = uSrcLayer;
+        op.u32Arg3 = uOtherSrcLayer;
+        m_vQueue.push_back(std::move(op));
     }
 }
 
 void CTerrainEngine_Impl::AddLayerScalar(uint32_t uDstLayer, uint32_t uSrcLayer, float fScalar)
 {
-    auto dstVec = GetInner(this->m_vpvData[uDstLayer]);
-    auto srcVec = GetInner(this->m_vpvData[uSrcLayer]);
-
-    auto uNumItems = m_uHeight * m_uWidth;
-    for(uint32_t x = 0; x < uNumItems; ++x)
+    if(this->m_bImmediateMode)
     {
-        dstVec[x] = srcVec[x] + fScalar;
+        Internal_AddLayerScalar(uDstLayer, uSrcLayer, fScalar);
+    }
+    else
+    {
+        FOperation op{};
+        op.OpType = EOperationTypes::AddScalar;
+        op.u32Arg1 = uDstLayer;
+        op.u32Arg2 = uSrcLayer;
+        op.u32Arg3 = *reinterpret_cast<uint32_t *>(&fScalar);
+        m_vQueue.push_back(std::move(op));
     }
 }
 
 void CTerrainEngine_Impl::SubLayerScalar(uint32_t uDstLayer, uint32_t uSrcLayer, float fScalar)
 {
-    auto dstVec = GetInner(this->m_vpvData[uDstLayer]);
-    auto srcVec = GetInner(this->m_vpvData[uSrcLayer]);
-    
-    auto uNumItems = m_uHeight * m_uWidth;
-    for(uint32_t x = 0; x < uNumItems; ++x)
+    if(this->m_bImmediateMode)
     {
-        dstVec[x] = srcVec[x] - fScalar;
+        Internal_SubLayerScalar(uDstLayer, uSrcLayer, fScalar);
+    }
+    else
+    {
+        FOperation op{};
+        op.OpType = EOperationTypes::SubScalar;
+        op.u32Arg1 = uDstLayer;
+        op.u32Arg2 = uSrcLayer;
+        op.u32Arg3 = *reinterpret_cast<uint32_t *>(&fScalar);
+        m_vQueue.push_back(std::move(op));
     }
 }
 
 void CTerrainEngine_Impl::MulLayerScalar(uint32_t uDstLayer, uint32_t uSrcLayer, float fScalar)
 {
-    auto dstVec = GetInner(this->m_vpvData[uDstLayer]);
-    auto srcVec = GetInner(this->m_vpvData[uSrcLayer]);
-    
-    auto uNumItems = m_uHeight * m_uWidth;
-    for(uint32_t x = 0; x < uNumItems; ++x)
+    if(this->m_bImmediateMode)
     {
-        dstVec[x] = srcVec[x] * fScalar;
+        Internal_MulLayerScalar(uDstLayer, uSrcLayer, fScalar);
+    }
+    else
+    {
+        FOperation op{};
+        op.OpType = EOperationTypes::MulScalar;
+        op.u32Arg1 = uDstLayer;
+        op.u32Arg2 = uSrcLayer;
+        op.u32Arg3 = *reinterpret_cast<uint32_t *>(&fScalar);
+        m_vQueue.push_back(std::move(op));
     }
 }
 
 void CTerrainEngine_Impl::DivLayerScalar(uint32_t uDstLayer, uint32_t uSrcLayer, float fScalar)
 {
-    auto dstVec = GetInner(this->m_vpvData[uDstLayer]);
-    auto srcVec = GetInner(this->m_vpvData[uSrcLayer]);
-
-    auto uNumItems = m_uHeight * m_uWidth;
-    for(uint32_t x = 0; x < uNumItems; ++x)
+    if(this->m_bImmediateMode)
     {
-        dstVec[x] = srcVec[x] / fScalar;
+        Internal_DivLayerScalar(uDstLayer, uSrcLayer, fScalar);
+    }
+    else
+    {
+        FOperation op{};
+        op.OpType = EOperationTypes::DivScalar;
+        op.u32Arg1 = uDstLayer;
+        op.u32Arg2 = uSrcLayer;
+        op.u32Arg3 = *reinterpret_cast<uint32_t *>(&fScalar);
+        m_vQueue.push_back(std::move(op));
     }
 }

@@ -17,9 +17,9 @@ TerrainEngine::CTerrainEngine::~CTerrainEngine()
 ////// ////// //////
 // Poll Current State
 // 
-std::shared_ptr<std::vector<FLOAT_TYPE>> TerrainEngine::CTerrainEngine::GetView()
+std::shared_ptr<std::vector<FLOAT_TYPE>> TerrainEngine::CTerrainEngine::GetView(uint32_t uLayerIndex)
 {
-    return Super->GetView();
+    return Super->GetView(uLayerIndex);
 }
 
 ////// ////// //////
@@ -71,9 +71,9 @@ void TerrainEngine::CTerrainEngine::MixLayers(uint32_t uDstLayer, uint32_t uSrcL
     Super->MixLayers(uDstLayer, uSrcLayer, uOtherSrcLayer);
 }
 
-void TerrainEngine::CTerrainEngine::MixLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint32_t uOtherSrcLayer, LayerMixer fnMixingFunction)
+void TerrainEngine::CTerrainEngine::MixLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint32_t uOtherSrcLayer, uint32_t uMixingFunctionIndex)
 {
-    Super->MixLayers(uDstLayer, uSrcLayer, uOtherSrcLayer, fnMixingFunction);
+    Super->MixLayers(uDstLayer, uSrcLayer, uOtherSrcLayer, uMixingFunctionIndex);
 }
 
 void TerrainEngine::CTerrainEngine::AddLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint32_t uOtherSrcLayer)

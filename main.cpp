@@ -14,7 +14,7 @@ int main(int argc, char** argv)
 
     // 
 
-    auto view = terrainEngine.GetView();
+    auto view = terrainEngine.GetView(0);
 
     std::cout << "Holding " << view.use_count() << " views to the array" << std::endl;
     std::cout << view->size() << std::endl;

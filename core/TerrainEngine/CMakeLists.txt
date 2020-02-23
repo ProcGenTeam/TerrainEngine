@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 find_package(Threads REQUIRED)
 
 # Switch development flags
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall --ggdb")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall")
 
 # Files
@@ -14,12 +14,12 @@ set(PrivateHeaders
     Private/Header/TerrainEngine_Impl.h
     Private/Header/PerlinNoise.h
     Private/Header/HydraulicErosion.h
-    Private/Header/Common.h
 )
 
 set(PrivateSources
     Private/Source/CuEngine_Impl.cu
     Private/Source/TerrainEngine_Impl.cpp
+    Private/Source/TerrainEngine_Impl_Internal.cpp
     Private/Source/TerrainEngine.cpp
     Private/Source/PerlinNoise.cpp
     Private/Source/HydraulicErosion.cpp

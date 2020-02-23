@@ -21,7 +21,7 @@ class TERRAIN_ENGINE_API CTerrainEngine
         ////// ////// //////
         // Poll Current State
         // 
-        std::shared_ptr<std::vector<FLOAT_TYPE>> GetView();
+        std::shared_ptr<std::vector<FLOAT_TYPE>> GetView(uint32_t uLayerIndex);
 
         ////// ////// //////
         // Switch Mode
@@ -43,7 +43,7 @@ class TERRAIN_ENGINE_API CTerrainEngine
         void DestroyLayer(uint32_t uLayerIndex);
 
         void MixLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint32_t uOtherSrcLayer);
-        void MixLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint32_t uOtherSrcLayer, LayerMixer fnMixingFunction);
+        void MixLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint32_t uOtherSrcLayer, uint32_t uMixingFunctionIndex);
 
         void AddLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint32_t uOtherSrcLayer);
         void SubLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint32_t uOtherSrcLayer);
