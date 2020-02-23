@@ -1,11 +1,69 @@
 #include "TerrainEngine/Private/Header/TerrainEngine_Impl.h"
 #include "TerrainEngine/Private/Header/PerlinNoise.h"
 #include "TerrainEngine/Private/Header/HydraulicErosion.h"
+#include "TerrainEngine/Public/Header/Operations.h"
 //#include <bits/stdint-uintn.h>
 //#include <cmath>
 #include <cstdint>
 
+
 #define GetInner(x) ((*x.get()).data())
+#define OpCase(x, y) case EOperationTypes::x: {y} break
+#define AutoCase(x, ...) case EOperationTypes::x: {Internal_##x(__VA_ARGS__);} break
+
+void CTerrainEngine_Impl::Internal_LazyEvaluate(FOperation &stOp)
+{
+    switch(stOp.OpType)
+    {
+        AutoCase(AddLayers, stOp.u32Arg1, stOp.u32Arg2, stOp.u32Arg3);
+        AutoCase(DivLayers, stOp.u32Arg1, stOp.u32Arg2, stOp.u32Arg3);
+        AutoCase(MulLayers, stOp.u32Arg1, stOp.u32Arg2, stOp.u32Arg3);
+        AutoCase(SubLayers, stOp.u32Arg1, stOp.u32Arg2, stOp.u32Arg3);
+
+        AutoCase(
+            AddLayerScalar,
+            stOp.u32Arg1,
+            stOp.u32Arg2,
+            *reinterpret_cast<float*>(&stOp.u32Arg3)
+        );
+        AutoCase(
+            DivLayerScalar,
+            stOp.u32Arg1,
+            stOp.u32Arg2,
+            *reinterpret_cast<float*>(&stOp.u32Arg3)
+        );
+        AutoCase(
+            MulLayerScalar,
+            stOp.u32Arg1,
+            stOp.u32Arg2,
+            *reinterpret_cast<float*>(&stOp.u32Arg3)
+        );
+        AutoCase(
+            SubLayerScalar,
+            stOp.u32Arg1,
+            stOp.u32Arg2,
+            *reinterpret_cast<float*>(&stOp.u32Arg3)
+        );
+
+        AutoCase(MixLayers, stOp.u32Arg1, stOp.u32Arg2, stOp.u32Arg3);
+        AutoCase(MixLayersCustom, stOp.u32Arg1, stOp.u32Arg2, stOp.u32Arg3, m_vMixingFunctions[stOp.u32Arg4]);
+
+        case EOperationTypes::CreateLayer:
+            Internal_CreateLayer();
+            break;
+
+        AutoCase(DestroyLayer, stOp.u32Arg1);
+
+        AutoCase(Perlin, stOp.u32Arg1, *reinterpret_cast<float*>(&stOp.u32Arg2));
+        AutoCase(Erode, stOp.u32Arg1, stOp.u32Arg2, stOp.u32Arg3);
+
+        
+        case EOperationTypes::TOTAL_OPERATION_TYPES:
+            break;
+        default:
+            break;
+    }
+}
 
 void CTerrainEngine_Impl::Internal_TrackMemoryLoad(int64_t iMemoryChange, EMemoryUseTypes eMemoryType)
 {
@@ -106,7 +164,7 @@ void CTerrainEngine_Impl::Internal_Perlin(uint32_t uLayerIndex, float fScale)
 uint32_t CTerrainEngine_Impl::Internal_CreateLayer()
 {
     // Update rolling memory use
-    Internal_TrackMemoryLoad(sizeof(FLOAT_TYPE) * m_uWidth * m_uHeight, EMemoryUseTypes::LayerMemory);
+    //Internal_TrackMemoryLoad(sizeof(FLOAT_TYPE) * m_uWidth * m_uHeight, EMemoryUseTypes::LayerMemory);
 
     auto temp = std::make_shared<std::vector<FLOAT_TYPE>>(std::vector<FLOAT_TYPE>(m_uHeight * m_uWidth));
     temp->resize(m_uHeight * m_uWidth);
@@ -118,7 +176,7 @@ uint32_t CTerrainEngine_Impl::Internal_CreateLayer()
 void CTerrainEngine_Impl::Internal_DestroyLayer(uint32_t uLayerIndex)
 {
     // Total needs to drop
-    Internal_TrackMemoryLoad(-sizeof(FLOAT_TYPE) * m_uWidth * m_uHeight, EMemoryUseTypes::LayerMemory);
+    //Internal_TrackMemoryLoad(-sizeof(FLOAT_TYPE) * m_uWidth * m_uHeight, EMemoryUseTypes::LayerMemory);
 }
 
 void CTerrainEngine_Impl::Internal_MixLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint32_t uOtherSrcLayer)
@@ -138,7 +196,7 @@ void CTerrainEngine_Impl::Internal_MixLayers(uint32_t uDstLayer, uint32_t uSrcLa
     }
 }
 
-void CTerrainEngine_Impl::Internal_MixLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint32_t uOtherSrcLayer, LayerMixer fnMixingFunction)
+void CTerrainEngine_Impl::Internal_MixLayersCustom(uint32_t uDstLayer, uint32_t uSrcLayer, uint32_t uOtherSrcLayer, LayerMixer fnMixingFunction)
 {
     auto dstVec = GetInner(this->m_vpvData[uDstLayer]);
     auto srcVec = GetInner(this->m_vpvData[uSrcLayer]);
@@ -185,7 +243,6 @@ void CTerrainEngine_Impl::Internal_MulLayers(uint32_t uDstLayer, uint32_t uSrcLa
     auto dstVec = GetInner(this->m_vpvData[uDstLayer]);
     auto srcVec = GetInner(this->m_vpvData[uSrcLayer]);
     auto otsrcVec = GetInner(this->m_vpvData[uOtherSrcLayer]);
-
 
     auto uNumItems = m_uHeight * m_uWidth;
     for(uint32_t x = 0; x < uNumItems; ++x)

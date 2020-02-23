@@ -17,8 +17,11 @@ class CTerrainEngine_Impl
         uint32_t m_uOverScan;
         uint32_t m_uFilterSize;
 
+        uint32_t m_uStackPointer;
         std::vector<FOperation> m_vQueue;
         bool m_bImmediateMode;
+
+
         std::vector<uint64_t> m_vTotalMemoryUsed;
         std::vector<uint64_t> m_vPeakMemoryUsed;
 
@@ -35,6 +38,11 @@ class CTerrainEngine_Impl
         void Internal_Initialise();
 
     protected:
+        ////// ////// //////
+        //
+        //
+        virtual void Internal_LazyEvaluate(FOperation &stOp);
+
         ////// ////// //////
         // Safety
         //
@@ -59,7 +67,7 @@ class CTerrainEngine_Impl
         // Private Layer Combination
         //
         virtual void Internal_MixLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint32_t uOtherSrcLayer);
-        virtual void Internal_MixLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint32_t uOtherSrcLayer, LayerMixer lmMixingFunction);
+        virtual void Internal_MixLayersCustom(uint32_t uDstLayer, uint32_t uSrcLayer, uint32_t uOtherSrcLayer, LayerMixer lmMixingFunction);
 
         virtual void Internal_AddLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint32_t uOtherSrcLayer);
         virtual void Internal_SubLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint32_t uOtherSrcLayer);

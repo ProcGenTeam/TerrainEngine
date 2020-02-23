@@ -17,7 +17,7 @@ enum class EOperationTypes : uint32_t
     Perlin,
 
     CreateLayer,
-    DestoryLayer,
+    DestroyLayer,
 
     MixLayers,
     MixLayersCustom,
@@ -27,10 +27,10 @@ enum class EOperationTypes : uint32_t
     MulLayers,
     DivLayers,
 
-    AddScalar,
-    SubScalar,
-    MulScalar,
-    DivScalar,
+    AddLayerScalar,
+    SubLayerScalar,
+    MulLayerScalar,
+    DivLayerScalar,
 
     TOTAL_OPERATION_TYPES
 };

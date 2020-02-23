@@ -13,7 +13,7 @@ CHydraulicErosion::CHydraulicErosion
     m_mtRandGen(std::mt19937_64(uSeed)),
     m_distNormal(std::normal_distribution<float>(1.0, 0.1))
 {
-
+    
 }
 
 CHydraulicErosion::~CHydraulicErosion()
@@ -134,7 +134,9 @@ void CHydraulicErosion::GenerateGradientMap(FLOAT_TYPE *pHeight, uint32_t uWidth
 
     FGradSumParams stParams{};
 
-//#pragma omp parallel for private(stParams)
+#ifdef NDEBUG
+#pragma omp parallel for private(stParams)
+#endif
     for(uint32_t y = m_iOverscan; y < uHeight - m_iOverscan; ++y)
     {
         //FGradSumParams
@@ -169,7 +171,9 @@ void CHydraulicErosion::Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t uH
 
     FGradSumParams stParams{};
 
+#ifdef NDEBUG
 #pragma omp parallel for private(stParams)
+#endif
     for(uint32_t y = 0; y < uHeight; ++y)
     {
         //FGradSumParams

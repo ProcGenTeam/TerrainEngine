@@ -24,7 +24,8 @@ CTerrainEngine_Impl::CTerrainEngine_Impl
     m_iYOffset(iYOffset),
     m_fGlobalScale(fGlobalScale),
     m_bImmediateMode(false),
-    m_uFilterSize(uFilterSize)
+    m_uFilterSize(uFilterSize),
+    m_uStackPointer(0)
 {
     // Create Default Layer
     auto temp = std::make_shared<std::vector<FLOAT_TYPE>>(std::vector<FLOAT_TYPE>(m_uHeight * m_uWidth));
@@ -32,6 +33,8 @@ CTerrainEngine_Impl::CTerrainEngine_Impl
     m_vpvData.push_back(std::move(temp));
 
     Internal_Initialise();
+
+    Internal_TrackMemoryLoad(m_uHeight * m_uWidth * sizeof(FLOAT_TYPE), EMemoryUseTypes::LayerMemory);
     
     //m_pData = std::shared_ptr<std::vector<uint32_t>>(std::vector<uint32_t>[m_uWidth * m_uHeight]);
 }
@@ -101,7 +104,10 @@ void CTerrainEngine_Impl::DisableImmediateMode()
 }
 void CTerrainEngine_Impl::Render()
 {
-    return;
+    for(; m_uStackPointer < m_vQueue.size(); ++m_uStackPointer)
+    {
+        Internal_LazyEvaluate(m_vQueue[m_uStackPointer]);
+    }
 }
 
 ////// ////// //////
@@ -122,7 +128,9 @@ void CTerrainEngine_Impl::Erode(uint32_t uLayerIndex, uint32_t uSteps, uint32_t 
     {
         FOperation op{};
         op.OpType = EOperationTypes::Erode;
-        op.u32Arg1 = uSteps;
+        op.u32Arg1 = uLayerIndex;
+        op.u32Arg2 = uSteps;
+        op.u32Arg3 = uFilterSize;
         m_vQueue.push_back(std::move(op));
     }
 
@@ -181,7 +189,7 @@ void CTerrainEngine_Impl::DestroyLayer(uint32_t uLayerIndex)
     else
     {
         FOperation op{};
-        op.OpType = EOperationTypes::DestoryLayer;
+        op.OpType = EOperationTypes::DestroyLayer;
         op.u32Arg1 = uLayerIndex;
         m_vQueue.push_back(std::move(op));
     }
@@ -215,7 +223,7 @@ void CTerrainEngine_Impl::MixLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint
 {
     if(this->m_bImmediateMode)
     {
-        Internal_MixLayers(uDstLayer, uSrcLayer, uOtherSrcLayer, m_vMixingFunctions[uMixingFunctionIndex]);
+        Internal_MixLayersCustom(uDstLayer, uSrcLayer, uOtherSrcLayer, m_vMixingFunctions[uMixingFunctionIndex]);
     }
     else
     {
@@ -306,7 +314,7 @@ void CTerrainEngine_Impl::AddLayerScalar(uint32_t uDstLayer, uint32_t uSrcLayer,
     else
     {
         FOperation op{};
-        op.OpType = EOperationTypes::AddScalar;
+        op.OpType = EOperationTypes::AddLayerScalar;
         op.u32Arg1 = uDstLayer;
         op.u32Arg2 = uSrcLayer;
         op.u32Arg3 = *reinterpret_cast<uint32_t *>(&fScalar);
@@ -323,7 +331,7 @@ void CTerrainEngine_Impl::SubLayerScalar(uint32_t uDstLayer, uint32_t uSrcLayer,
     else
     {
         FOperation op{};
-        op.OpType = EOperationTypes::SubScalar;
+        op.OpType = EOperationTypes::SubLayerScalar;
         op.u32Arg1 = uDstLayer;
         op.u32Arg2 = uSrcLayer;
         op.u32Arg3 = *reinterpret_cast<uint32_t *>(&fScalar);
@@ -340,7 +348,7 @@ void CTerrainEngine_Impl::MulLayerScalar(uint32_t uDstLayer, uint32_t uSrcLayer,
     else
     {
         FOperation op{};
-        op.OpType = EOperationTypes::MulScalar;
+        op.OpType = EOperationTypes::MulLayerScalar;
         op.u32Arg1 = uDstLayer;
         op.u32Arg2 = uSrcLayer;
         op.u32Arg3 = *reinterpret_cast<uint32_t *>(&fScalar);
@@ -357,7 +365,7 @@ void CTerrainEngine_Impl::DivLayerScalar(uint32_t uDstLayer, uint32_t uSrcLayer,
     else
     {
         FOperation op{};
-        op.OpType = EOperationTypes::DivScalar;
+        op.OpType = EOperationTypes::DivLayerScalar;
         op.u32Arg1 = uDstLayer;
         op.u32Arg2 = uSrcLayer;
         op.u32Arg3 = *reinterpret_cast<uint32_t *>(&fScalar);
