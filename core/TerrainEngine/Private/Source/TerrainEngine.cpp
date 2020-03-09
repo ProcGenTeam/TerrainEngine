@@ -3,8 +3,8 @@
 
 #define Super (reinterpret_cast<CTerrainEngine_Impl*>(this->m_implementation))
 
-TerrainEngine::CTerrainEngine::CTerrainEngine(uint32_t uWaterLevel, uint32_t uWidth, uint32_t uHeight, float fScale)
- : m_implementation(new CTerrainEngine_Impl(uWaterLevel, uWidth, uHeight, fScale))
+TerrainEngine::CTerrainEngine::CTerrainEngine(uint32_t uWaterLevel, uint32_t uWidth, uint32_t uHeight, int32_t iXOffset, int32_t iYOffset, float fScale, uint32_t uOverscan, uint32_t uFilterSize)
+ : m_implementation(new CTerrainEngine_Impl(uWaterLevel, uWidth, uHeight, iXOffset, iYOffset, fScale, uOverscan, uFilterSize))
 {
 
 }
@@ -20,6 +20,11 @@ TerrainEngine::CTerrainEngine::~CTerrainEngine()
 std::shared_ptr<std::vector<FLOAT_TYPE>> TerrainEngine::CTerrainEngine::GetView(uint32_t uLayerIndex)
 {
     return Super->GetView(uLayerIndex);
+}
+
+std::vector<FOperation> TerrainEngine::CTerrainEngine::GetHistory()
+{
+    return std::move(Super->GetHistory());
 }
 
 ////// ////// //////

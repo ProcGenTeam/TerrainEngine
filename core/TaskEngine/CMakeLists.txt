@@ -49,3 +49,5 @@ target_link_libraries(
     TaskEngine
     ${CMAKE_THREAD_LIBS_INIT}
 )
+
+add_subdirectory(Test)

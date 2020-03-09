@@ -86,6 +86,10 @@ uint64_t CTerrainEngine_Impl::GetPeakMemoryUse(EMemoryUseTypes eMemoryType)
     return m_vPeakMemoryUsed[index];
 }
 
+std::vector<FOperation> CTerrainEngine_Impl::GetHistory()
+{
+    return m_vQueue;
+}
 
 ////// ////// //////
 // Switch Mode

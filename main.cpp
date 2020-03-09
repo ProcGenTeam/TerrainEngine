@@ -8,7 +8,7 @@
 int main(int argc, char** argv)
 {
     auto terrainEngine = TerrainEngine::CTerrainEngine(250, 512, 512);
-    auto tasks = TerrainEngine::CTaskEngine();
+    auto tasks = TerrainEngine::CTaskEngine(20001, 20001);
 
     tasks.RegisterNode("192.168.1.1", 6556);
 

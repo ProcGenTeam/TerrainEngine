@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <vector> // For std::vector
 #include <memory> // SmartPointers
-
+#include "TerrainEngine/Public/Header/Operations.h"
 
 
 TE_NS_OPEN
@@ -15,13 +15,14 @@ class TERRAIN_ENGINE_API CTerrainEngine
         void *m_implementation;
     public:
     // Methods
-        CTerrainEngine(uint32_t uWaterLevel, uint32_t uWidth, uint32_t uHeight, float fScale = 0.001f);
+        CTerrainEngine(uint32_t uWaterLevel, uint32_t uWidth, uint32_t uHeight, int32_t iXOffset = 0, int32_t iYOffset = 0, float fScale = 0.001f, uint32_t uOverscan = 2, uint32_t uFilterSize = 2);
         ~CTerrainEngine();
 
         ////// ////// //////
         // Poll Current State
         // 
         std::shared_ptr<std::vector<FLOAT_TYPE>> GetView(uint32_t uLayerIndex);
+        std::vector<FOperation> GetHistory();
 
         ////// ////// //////
         // Switch Mode
