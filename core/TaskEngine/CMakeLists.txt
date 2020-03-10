@@ -24,6 +24,7 @@ set(PublicHeaders
     Public/Header/Defines.h
     Public/Header/TaskEngine.h
     Public/Header/ErrorCode.h
+    Public/Header/Worker.h
 )
 
 # Add Shared Object

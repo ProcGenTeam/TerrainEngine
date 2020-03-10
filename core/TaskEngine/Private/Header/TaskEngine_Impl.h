@@ -4,7 +4,7 @@
 #include <vector>
 #include "TerrainEngine/Public/Header/Operations.h"
 #include "TerrainEngine/Private/Header/TerrainEngine_Impl.h"
-#include "TaskEngine/Public/Header/Tasks.h"
+#include "TaskEngine/Private/Header/Task.h"
 #include <queue>
 
 class CTaskEngine_Impl

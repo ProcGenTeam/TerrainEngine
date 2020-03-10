@@ -35,5 +35,6 @@ target_link_libraries(TerrainEnginert
 )
 
 ## Add Lib
+add_subdirectory(core/NetworkEngine)
 add_subdirectory(core/TerrainEngine)
 add_subdirectory(core/TaskEngine)
