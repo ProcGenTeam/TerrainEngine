@@ -3,6 +3,7 @@ project(NetworkEngine VERSION 0.0.1 DESCRIPTION "Network Component")
 set(CMAKE_CXX_STANDARD 17)
 
 find_package(Threads REQUIRED)
+find_package(OpenSSL REQUIRED)
 
 # Switch development flags
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall --ggdb")
@@ -12,6 +13,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall")
 set(PrivateHeaders
     Private/Header/NetworkEngine_Impl.h
     Private/Header/NetworkState.h
+    Private/Header/Message.h
 )
 
 set(PrivateSources
@@ -22,8 +24,9 @@ set(PrivateSources
 set(PublicHeaders
     Public/Header/Defines.h
     Public/Header/NetworkEngine.h
-    #Public/Header/Connection.h
     Public/Header/ErrorCode.h
+    Public/Header/NetTask.h
+    Public/Header/NetTypes.h
 )
 
 # Add Shared Object
@@ -43,12 +46,15 @@ include_directories(
 
 target_include_directories(NetworkEngine PRIVATE
     ${CMAKE_SOURCE_DIR}
+    ${OPENSSL_INCLUDE_DIR}
 )
 
 target_link_libraries(
     NetworkEngine
-    glm
     ${CMAKE_THREAD_LIBS_INIT}
+    ${OPENSSL_LIBRARIES}
+    ${OPENSSL_SSL_LIBRARIES}
+    ${OPENSSL_CRYPTO_LIBRARIES}
 )
 
 #add_subdirectory(Test)

@@ -8,7 +8,7 @@
 
 TS_NS_OPEN
 
-class TASK_ENGINE_API CTaskEngine
+class TASK_ENGINE_API CTaskEngine final
 {
     private:
         void *m_implementation;
@@ -21,9 +21,9 @@ class TASK_ENGINE_API CTaskEngine
         // 
         //std::shared_ptr<std::vector<uint32_t>> GetView();
 
-        virtual ETaskErrorCodes RegisterNode(std::string strHostname, uint16_t uPort, std::vector<char> vKey);
-        virtual ETaskErrorCodes RegisterNode(std::string strHostname, uint16_t uPort);
-        virtual ETaskErrorCodes Listen(uint16_t uPort);
+        ETaskErrorCodes RegisterNode(std::string strHostname, uint16_t uPort, std::vector<char> vKey);
+        ETaskErrorCodes RegisterNode(std::string strHostname, uint16_t uPort);
+        ETaskErrorCodes Listen(uint16_t uPort);
 };
 
 TS_NS_CLOSE

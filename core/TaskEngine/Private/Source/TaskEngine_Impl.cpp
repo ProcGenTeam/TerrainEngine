@@ -1,8 +1,10 @@
 #include "TaskEngine/Private/Header/TaskEngine_Impl.h"
+#include "TaskEngine/Public/Header/ErrorCode.h"
 #include "TerrainEngine/Private/Header/TerrainEngine_Impl.h"
 
-
 #include <iostream>
+#include <memory>
+
 
 CTaskEngine_Impl::CTaskEngine_Impl(uint64_t uWidth, uint64_t uHeight, uint32_t uTileSize)
 {
@@ -14,7 +16,6 @@ CTaskEngine_Impl::CTaskEngine_Impl(uint64_t uWidth, uint64_t uHeight, uint32_t u
     // Generate Tasks
     for(uint32_t y = 0; y < uYTiles; ++y)
     {
-        std::cout << y * uTileSize << " " << (y+1) * (uTileSize) - 1 << std::endl;
         for(uint32_t x = 0; x < uXTiles; ++x)
         {
             FTask task{};
@@ -30,9 +31,54 @@ CTaskEngine_Impl::~CTaskEngine_Impl()
     
 }
 
-void CTaskEngine_Impl::Render(std::vector<FOperation> &&vHistory)
+ETaskErrorCodes CTaskEngine_Impl::ScheduleTask(FTask &stTask, std::vector<FOperation> &vHistory)
 {
-    m_vHistory = std::move(vHistory);
+    if(m_vpNetworkEngine.empty()) { return ETaskErrorCodes::NoEngines; }
 
-    //for i in 
+
+    // Pick best engine
+    m_vpNetworkEngine[0]->SubmitTask(stTask, vHistory);
+
+    return ETaskErrorCodes::NoError;
+}
+
+ETaskErrorCodes CTaskEngine_Impl::Render(std::vector<FOperation> &vHistory)
+{
+    while(m_qTasks.size() > 0)
+    {
+        auto task = m_qTasks.front();
+
+        auto ret = ScheduleTask(task, vHistory);
+        if(ret != ETaskErrorCodes::NoError) { return ret; }
+
+        m_qTasks.pop();
+    }
+
+    return ETaskErrorCodes::NoError;
+
+}
+
+ETaskErrorCodes CTaskEngine_Impl::Listen(uint16_t uPort)
+{
+    return ETaskErrorCodes::TOTAL_ERROR_CODES;
+}
+
+ETaskErrorCodes CTaskEngine_Impl::RegisterNode(std::string strHostname, uint16_t uPort, std::vector<char> vKey)
+{
+    auto temp = std::make_shared<CNetworkEngine_Impl>();
+    m_vpNetworkEngine.push_back(temp);
+
+    temp->RegisterNode(strHostname, uPort, vKey);
+
+    return ETaskErrorCodes::NoError;
+}
+
+ETaskErrorCodes CTaskEngine_Impl::RegisterNode(std::string strHostname, uint16_t uPort)
+{
+    auto temp = std::make_shared<CNetworkEngine_Impl>();
+    m_vpNetworkEngine.push_back(temp);
+
+    temp->RegisterNode(strHostname, uPort);
+    
+    return ETaskErrorCodes::NoError;
 }

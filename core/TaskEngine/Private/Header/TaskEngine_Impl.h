@@ -4,22 +4,31 @@
 #include <vector>
 #include "TerrainEngine/Public/Header/Operations.h"
 #include "TerrainEngine/Private/Header/TerrainEngine_Impl.h"
-#include "TaskEngine/Private/Header/Task.h"
+#include "NetworkEngine/Private/Header/NetworkEngine_Impl.h"
+#include "TaskEngine/Public/Header/Task.h"
+#include "TaskEngine/Public/Header/ErrorCode.h"
 #include <queue>
 
 class CTaskEngine_Impl
 {
     private:
-        std::vector<std::unique_ptr<CTerrainEngine_Impl>> m_vpTerrainEngine;
-        std::vector<FOperation> m_vHistory;
-        //std::unique_ptr<CNetworkEngine_Impl> m_pNetworkEngine;
+        std::vector<std::shared_ptr<CTerrainEngine_Impl>> m_vpTerrainEngine;
+        std::vector<std::shared_ptr<CNetworkEngine_Impl>> m_vpNetworkEngine;
         std::queue<FTask> m_qTasks;
 
     protected:
+
+
+    private:
+        virtual ETaskErrorCodes ScheduleTask(FTask &stTask, std::vector<FOperation> &vHistory);
     public:
         CTaskEngine_Impl(uint64_t uWidth, uint64_t uHeight, uint32_t uTileSize);
         virtual ~CTaskEngine_Impl();
 
-        virtual void Render(std::vector<FOperation> &&vHistory);
+        virtual ETaskErrorCodes Render(std::vector<FOperation> &vHistory);
 
+        virtual ETaskErrorCodes RegisterNode(std::string strHostname, uint16_t uPort, std::vector<char> vKey);
+        virtual ETaskErrorCodes RegisterNode(std::string strHostname, uint16_t uPort);
+
+        virtual ETaskErrorCodes Listen(uint16_t uPort);
 };

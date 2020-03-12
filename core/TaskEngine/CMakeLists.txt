@@ -12,7 +12,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall")
 set(PrivateHeaders
     Private/Header/TaskEngine_Impl.h
     Private/Header/Connection.h
-    Private/Header/Task.h
+    
 )
 
 set(PrivateSources
@@ -25,6 +25,7 @@ set(PublicHeaders
     Public/Header/TaskEngine.h
     Public/Header/ErrorCode.h
     Public/Header/Worker.h
+    Public/Header/Task.h
 )
 
 # Add Shared Object
@@ -48,6 +49,8 @@ target_include_directories(TaskEngine PRIVATE
 
 target_link_libraries(
     TaskEngine
+    TerrainEngine
+    NetworkEngine
     ${CMAKE_THREAD_LIBS_INIT}
 )
 
