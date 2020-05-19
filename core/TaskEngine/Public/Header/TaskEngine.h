@@ -2,6 +2,7 @@
 
 #include "TaskEngine/Public/Header/Defines.h"
 #include "TaskEngine/Public/Header/ErrorCode.h"
+#include "TerrainEngine/Public/Header/Operations.h"
 #include <cstdint>
 #include <vector>
 #include <string>
@@ -24,6 +25,8 @@ class TASK_ENGINE_API CTaskEngine final
         ETaskErrorCodes RegisterNode(std::string strHostname, uint16_t uPort, std::vector<char> vKey);
         ETaskErrorCodes RegisterNode(std::string strHostname, uint16_t uPort);
         ETaskErrorCodes Listen(uint16_t uPort);
+
+        ETaskErrorCodes Render(std::vector<FOperation> &vHistory);
 };
 
 TS_NS_CLOSE

@@ -20,6 +20,7 @@
 #define TE_NS_OPEN namespace TERRAIN_ENGINE_NAMESPACE {
 #define TE_NS_CLOSE }
 
-#define FLOAT_TYPE float
-
 typedef float (*LayerMixer)(float, float);
+
+
+#include "core/Common/Public/Header/Types.h"

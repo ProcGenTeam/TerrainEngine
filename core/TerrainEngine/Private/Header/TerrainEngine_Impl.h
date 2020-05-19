@@ -90,6 +90,8 @@ class CTerrainEngine_Impl
         virtual std::shared_ptr<std::vector<FLOAT_TYPE>> GetView(uint32_t uLayerIndex);
         virtual uint64_t GetPeakMemoryUse(EMemoryUseTypes eMemoryType = EMemoryUseTypes::AllMemory);
         virtual std::vector<FOperation> GetHistory();
+        virtual void SetHistory(std::vector<FOperation> &vHistory);
+        virtual void SetHistory(std::vector<FOperation> *vHistory);
 
         ////// ////// //////
         // Switch Mode

@@ -1,17 +1,24 @@
 #pragma once
 #include <cstdint>
 
-enum class ENetworkErrorCodes : uint32_t
-{
-    NoError,
-    HostNotFound,
-    HostKeyFailure,
-    HostFailedVerification,
-    HostDropped,
+#include "Common/Public/Header/Error.h"
 
-    Listen_InvalidPort,
-    Listen_CreateError,
-    Listen_AcceptError,
+typedef EErrorCodes ENetworkErrorCodes;
 
-    TOTAL_ERROR_CODES
-};
+// enum class ENetworkErrorCodes : uint32_t
+// {
+//     NoError,
+
+//     HostNotFound,
+//     HostKeyFailure,
+//     HostFailedVerification,
+//     HostDropped,
+
+//     Listen_InvalidPort,
+//     Listen_CreateError,
+//     Listen_AcceptError,
+
+//     Connect_AlreadyConnectedError,
+
+//     TOTAL_ERROR_CODES
+// };

@@ -91,6 +91,16 @@ std::vector<FOperation> CTerrainEngine_Impl::GetHistory()
     return m_vQueue;
 }
 
+void CTerrainEngine_Impl::SetHistory(std::vector<FOperation> &vHistory)
+{
+    m_vQueue = vHistory;
+}
+
+void CTerrainEngine_Impl::SetHistory(std::vector<FOperation> *vHistory)
+{
+    m_vQueue = *vHistory;
+}
+
 ////// ////// //////
 // Switch Mode
 //

@@ -1,7 +1,11 @@
+#pragma once
 #include <cstdint>
 #include <vector>
 #include <random>
-#include "extern/glm/glm/glm.hpp"
+
+#define GLM_FORCE_SWIZZLE
+#include <glm/glm.hpp>
+
 #include "TerrainEngine/Public/Header/Defines.h"
 
 struct FGradSumParams

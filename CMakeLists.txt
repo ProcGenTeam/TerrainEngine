@@ -21,8 +21,9 @@ set(FRONT_END
 )
 
 include_directories(
-        ${CMAKE_SOURCE_DIR}
-        ${CMAKE_SOURCE_DIR}/core
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/core
+    ${CMAKE_SOURCE_DIR}/extern/glm
 )
 
 add_executable(TerrainEnginert ${FRONT_END})
@@ -35,6 +36,9 @@ target_link_libraries(TerrainEnginert
 )
 
 ## Add Lib
+add_subdirectory(core/RenderEngine)
 add_subdirectory(core/NetworkEngine)
 add_subdirectory(core/TerrainEngine)
 add_subdirectory(core/TaskEngine)
+add_subdirectory(extern/glm)
+#add_subdirectory(${CMAKE_SOURCE_DIR}/extern/glm ./glm)

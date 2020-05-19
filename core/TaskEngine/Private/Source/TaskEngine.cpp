@@ -14,18 +14,23 @@ TerrainEngine::CTaskEngine::~CTaskEngine()
     delete Super;
 }
 
+ETaskErrorCodes TerrainEngine::CTaskEngine::Render(std::vector<FOperation> &vHistory)
+{
+    return Super->Render(vHistory);
+}
+
 ETaskErrorCodes TerrainEngine::CTaskEngine::RegisterNode(std::string strHostname, uint16_t uPort, std::vector<char> vKey)
 {
-    return ETaskErrorCodes::TOTAL_ERROR_CODES;
+    return Super->RegisterNode(strHostname, uPort, vKey);
 }
 
 ETaskErrorCodes TerrainEngine::CTaskEngine::RegisterNode(std::string strHostname, uint16_t uPort)
 {
-    return ETaskErrorCodes::TOTAL_ERROR_CODES;
+    return Super->RegisterNode(strHostname, uPort);
 }
 
 ETaskErrorCodes TerrainEngine::CTaskEngine::Listen(uint16_t uPort)
 {
-    return ETaskErrorCodes::TOTAL_ERROR_CODES;
+    return Super->Listen(uPort);
 }
 

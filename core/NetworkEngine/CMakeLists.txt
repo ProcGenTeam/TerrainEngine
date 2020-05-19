@@ -6,14 +6,13 @@ find_package(Threads REQUIRED)
 find_package(OpenSSL REQUIRED)
 
 # Switch development flags
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall --ggdb")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall")
+#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall --ggdb")
+#set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall")
 
 # Files
 set(PrivateHeaders
     Private/Header/NetworkEngine_Impl.h
     Private/Header/NetworkState.h
-    Private/Header/Message.h
 )
 
 set(PrivateSources

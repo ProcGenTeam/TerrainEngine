@@ -200,9 +200,20 @@ void CHydraulicErosion::Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t uH
                     // Fill the struct and call the function
                     stParams.uX = x;
                     stParams.uY = y;
-                    auto Gradient = GradientSum(stParams);
+                    // auto Gradient = GradientSum(stParams);
 
-                    auto ero = Gradient.x * fScale;
+                    // auto ero = Gradient.x * fScale;
+
+                    // pOut[my + x] = CentrePixel + ero;
+
+                    // Erode Based on normals
+                    auto rT = pHeight[(y-1) * uWidth + x] * 255;
+                    auto rB = pHeight[(y+1) * uWidth + x] * 255;
+                    auto rR = pHeight[(y) * uWidth + (x+1)] * 255;
+                    auto rL = pHeight[(y) * uWidth + (x-1)] * 255;
+
+                    auto pointNorm = glm::normalize(glm::vec3(2 * (rR-rL), -4, 2 * (rB-rT)));
+                    auto ero = -(1 - -glm::dot(pointNorm, glm::vec3(0,1,0))) * 0.01f;
 
                     pOut[my + x] = CentrePixel + ero;
                 }
@@ -210,4 +221,3 @@ void CHydraulicErosion::Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t uH
         }
     }
 }
-

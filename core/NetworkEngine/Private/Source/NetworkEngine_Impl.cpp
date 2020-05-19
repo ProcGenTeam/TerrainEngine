@@ -2,6 +2,10 @@
 #include "NetworkEngine/Public/Header/ErrorCode.h"
 
 CNetworkEngine_Impl::CNetworkEngine_Impl()
+: m_pRaw(nullptr),
+  m_pSsl(nullptr),
+  m_bHasConnection(false),
+  m_bIsServing(false)
 {
     //m_trNetHandler = std::thread(&CNetworkEngine_Impl::NetworkMain_RT, this);
 }
@@ -9,6 +13,25 @@ CNetworkEngine_Impl::CNetworkEngine_Impl()
 CNetworkEngine_Impl::~CNetworkEngine_Impl()
 {
 
+}
+
+ENetworkErrorCodes CNetworkEngine_Impl::Internal_Connect()
+{
+    // Use reconnect vars
+
+    if(m_bHasConnection) { return ENetworkErrorCodes::Connect_AlreadyConnectedError; }
+
+    m_pRaw = BIO_new_connect(
+        (m_strHostname + ":" + std::to_string(m_uPort)).c_str()
+    );
+
+    if(!m_pRaw) { return ENetworkErrorCodes::Connect_GeneralFailure; }
+
+    auto conn = BIO_do_connect(m_pRaw);
+    if(conn <= 0) {return ENetworkErrorCodes::Connect_GeneralFailure;}
+
+    m_bHasConnection = true;
+    return ENetworkErrorCodes::NoError;
 }
 
 ENetworkErrorCodes CNetworkEngine_Impl::SubmitTask(FTask &task, std::vector<FOperation> &vHistory)
@@ -23,7 +46,13 @@ ENetworkErrorCodes CNetworkEngine_Impl::RegisterNode
     std::vector<char> vKey
 )
 {
-    return ENetworkErrorCodes::TOTAL_ERROR_CODES;
+    m_strHostname = strHostname;
+    m_uPort = uPort;
+    m_vKey = vKey;    
+
+    auto ret = Internal_Connect();
+
+    return ret;
 }
  
 ENetworkErrorCodes CNetworkEngine_Impl::RegisterNode
@@ -32,7 +61,12 @@ ENetworkErrorCodes CNetworkEngine_Impl::RegisterNode
     uint16_t uPort
 )
 {
-    return ENetworkErrorCodes::TOTAL_ERROR_CODES;
+    m_strHostname = strHostname;
+    m_uPort = uPort;
+
+    auto ret = Internal_Connect();
+
+    return ret;
 }
 
 ENetworkErrorCodes CNetworkEngine_Impl::Listen(uint16_t uPort)
@@ -41,11 +75,11 @@ ENetworkErrorCodes CNetworkEngine_Impl::Listen(uint16_t uPort)
     if(uPort == 0) { return ENetworkErrorCodes::Listen_InvalidPort; }
 
     // Try accept the port
-    BIO *ListenSocket = BIO_new_accept(std::to_string(uPort).c_str());
+    m_pServeRaw = BIO_new_accept(std::to_string(uPort).c_str());
 
-    if(ListenSocket)
+    if(m_pServeRaw)
     {
-        auto res = BIO_do_accept(ListenSocket);
+        auto res = BIO_do_accept(m_pServeRaw);
 
         if(res <= 0)
         {
@@ -60,6 +94,10 @@ ENetworkErrorCodes CNetworkEngine_Impl::Listen(uint16_t uPort)
         return ENetworkErrorCodes::Listen_CreateError;
     }
 
+    // m_pServeRaw can be read from
+    // Do we want a thread for it?
+    // TE already has a thread
+
     // Start a listening thread
     //m_trListener = std::thread(&CNetworkEngine_Impl::Listener_RT, this);
 
@@ -70,7 +108,12 @@ ENetworkErrorCodes CNetworkEngine_Impl::Listen(uint16_t uPort)
     return ENetworkErrorCodes::NoError;
 }
 
-void CNetworkEngine_Impl::SubmitMessage(FNetMessage &&Message)
+ENetworkErrorCodes CNetworkEngine_Impl::GetRequest(FDispatchTask &stTask)
+{
+    return ENetworkErrorCodes::NoError;
+}
+
+void CNetworkEngine_Impl::SubmitMessage(FMessage &&Message)
 {
     std::unique_lock<std::mutex> lock(m_mtxMessageQueue);
 
@@ -82,7 +125,7 @@ void CNetworkEngine_Impl::SubmitMessage(FNetMessage &&Message)
     m_cvMessageQueue.notify_one();
 }
 
-FNetMessage CNetworkEngine_Impl::ReadMessage()
+FMessage CNetworkEngine_Impl::ReadMessage()
 {
     // Wait on not being empty
     std::unique_lock<std::mutex> lock(m_mtxMessageQueue);

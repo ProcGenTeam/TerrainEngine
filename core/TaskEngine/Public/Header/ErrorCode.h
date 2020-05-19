@@ -1,13 +1,17 @@
 #pragma once
 #include <cstdint>
 
-enum class ETaskErrorCodes : uint32_t
-{
-    NoError,
-    HostNotFound,
-    HostKeyFailure,
+#include "Common/Public/Header/Error.h"
 
-    NoEngines,
+typedef EErrorCodes ETaskErrorCodes;
 
-    TOTAL_ERROR_CODES
-};
+// enum class ETaskErrorCodes : uint32_t
+// {
+//     NoError,
+//     HostNotFound,
+//     HostKeyFailure,
+
+//     NoEngines,
+
+//     TOTAL_ERROR_CODES
+// };

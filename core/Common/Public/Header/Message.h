@@ -1,5 +1,5 @@
 #pragma once
-#include "NetworkEngine/Public/Header/ErrorCode.h"
+#include "Common/Public/Header/Error.h"
 #include <cstdint>
 
 enum class EThreadType : uint32_t
@@ -11,13 +11,15 @@ enum class EThreadType : uint32_t
 
     General,
 
+    Task_NetHandler,
+
     TOTAL_THREAD_TYPES
 };
 
-struct FNetMessage
+struct FMessage
 {
     EThreadType ThreadType;
-    ENetworkErrorCodes ErrorType;
+    EErrorCodes ErrorType;
     union
     {
         uint64_t u64_Arg;

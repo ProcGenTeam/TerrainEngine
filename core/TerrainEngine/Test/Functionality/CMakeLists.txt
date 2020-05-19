@@ -19,5 +19,6 @@ add_executable(FunctionalTests TestFunctionality.cpp)
 target_link_libraries(FunctionalTests
     TerrainEngine
     TaskEngine
+    RenderEngine
     ${CMAKE_THREAD_LIBS_INIT}
 )

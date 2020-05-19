@@ -12,9 +12,11 @@ int main(int argc, char** argv)
 
     auto ttest = CTaskEngine_Impl(20001, 20001, 4096);
 
-    ttest.Listen(6787);
+    auto ret = ttest.Listen(6787);
+    std::cout << "Listen Result: " << GetName_en_gb(ret) << std::endl;
 
     ttest.RegisterNode("127.0.0.1", 6787);
+    std::cout << "Register Result: " << GetName_en_gb(ret) << std::endl;
 
     ttest.Render(hist);
      
