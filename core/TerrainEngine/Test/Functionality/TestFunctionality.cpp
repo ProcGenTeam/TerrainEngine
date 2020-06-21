@@ -6,7 +6,10 @@
 
 int main(int argc, char** argv)
 {
-    uint32_t baseRes = 1024;
+    float worldScale = 0.5;
+
+    uint32_t baseRes = 2048;
+
     for(int i = 0; i < 1; ++i)
     {
         uint32_t x = i / 2;
@@ -15,12 +18,12 @@ int main(int argc, char** argv)
         std::cout << x << " " << y << std::endl;
 
         auto terrainEngine = CTerrainEngine_Impl(
-            250,
+            0.01f,
             baseRes,
             baseRes,
             baseRes * x,
             baseRes * y,
-            1.0,
+            worldScale,
             16,
             2
         );
@@ -41,12 +44,21 @@ int main(int argc, char** argv)
         terrainEngine.MulLayerScalar(1, 1, 0.2);
         terrainEngine.AddLayers(0, 0, 1);
 
-        //terrainEngine.MulLayerScalar(0,0,0);
+        // Hitting Early
+        terrainEngine.ErodeByNormals(0, 1);
+
+        // terrainEngine.MulLayerScalar(0,0,0);
         terrainEngine.Perlin(1, 25);
         terrainEngine.Perlin(2, 4);
-        terrainEngine.MulLayerScalar(1, 1, 0.025);
+        terrainEngine.MulLayerScalar(1, 1, 0.0025);
         terrainEngine.MulLayers(1, 1, 2);
         terrainEngine.AddLayers(0, 0, 1);
+
+        //terrainEngine.MulLayerScalar(0,0,0);
+        terrainEngine.Perlin(1, 120);
+        terrainEngine.MulLayerScalar(1, 1, 0.0005);
+        terrainEngine.AddLayers(0,0,1);
+
 
 
         // terrainEngine.MulLayerScalar(0, 0, 0.33);
@@ -59,6 +71,13 @@ int main(int argc, char** argv)
             //std::cout << view->size() << std::endl;
 
             terrainEngine.Erode(0, 5);
+
+            // for(uint32_t x = 0; x < 5; ++x)
+            // {
+            //     terrainEngine.Erode(0, 1);
+            //     terrainEngine.ErodeByNormals(0, 8);
+            //     std::cout << "Limit: " << x << std::endl;
+            // }
 
             std::cout << "Holding " << view.use_count() << " views to the array" << std::endl;
         }
@@ -82,17 +101,18 @@ int main(int argc, char** argv)
 
         {
             FCameraSettings st{};
-            st.uWidth = st.uHeight = 512;
+            st.uWidth = st.uHeight = 1024;
             st.fSensorSizeX = st.fSensorSizeY = 0.1;
             st.fCameraDistance = 0.1f;
             st.fStepDistance = 0.1f;
             st.uWorldScaleUnits = 1024;
+            st.fWorldHeightRenderScale = 100.f / worldScale;
             st.fFarClip = 10000.f;
             st.fNearClip = 0.01f;
             auto view = terrainEngine.GetView(0);
 
             auto rend = CRenderEngine(st);
-            rend.MarchedRender("skyHigh.rgb", view, baseRes + 32);
+            rend.MarchedRender("skyHigh_" + std::to_string(x) + "_" + std::to_string(y) + ".rgb", view, baseRes + 32);
         }
 
     }

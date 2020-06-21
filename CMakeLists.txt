@@ -11,10 +11,14 @@ if (OPENMP_FOUND)
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
-set(USE_CUDA false CACHE BOOL "Enable CUDA")
-if (USE_CUDA)
-    add_definitions(-DTE_USE_CUDA)
-endif(USE_CUDA)
+set(USE_GPU false CACHE BOOL "Enable the GPU")
+if (USE_GPU)
+    add_definitions(-DTE_USE_GPU)
+endif(USE_GPU)
+
+#add_definitions(-DNDEBUG)
+#set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=thread -fPIE -g")
+#set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=thread -fPIE -g")
 
 set(FRONT_END
     main.cpp

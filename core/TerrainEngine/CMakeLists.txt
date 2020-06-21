@@ -8,16 +8,24 @@ find_package(Threads REQUIRED)
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall --ggdb")
 #set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall")
 
+find_package(OpenMP)
+if (OPENMP_FOUND)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+endif()
+
+
 # Files
 set(PrivateHeaders
-    Private/Header/CuEngine_Impl.h
+    Private/Header/GPUHydraulicErosion.h
     Private/Header/TerrainEngine_Impl.h
     Private/Header/PerlinNoise.h
     Private/Header/HydraulicErosion.h
 )
 
 set(PrivateSources
-    Private/Source/CuEngine_Impl.cu
+    Private/Source/GPUHydraulicErosion.cpp
     Private/Source/TerrainEngine_Impl.cpp
     Private/Source/TerrainEngine_Impl_Internal.cpp
     Private/Source/TerrainEngine.cpp

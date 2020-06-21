@@ -2,12 +2,14 @@
 #include "TerrainEngine/Private/Header/PerlinNoise.h"
 #include "TerrainEngine/Private/Header/HydraulicErosion.h"
 #include "TerrainEngine/Public/Header/Operations.h"
+#include "TerrainEngine/Private/Header/GPUHydraulicErosion.h"
 //#include <bits/stdint-uintn.h>
 //#include <cmath>
 #include <cstdint>
 
 
-#define GetInner(x) ((*x.get()).data())
+//#define GetInner(x) ((*x.get()).data())
+#define GetInner(x) (x->data())
 #define OpCase(x, y) case EOperationTypes::x: {y} break
 #define AutoCase(x, ...) case EOperationTypes::x: {Internal_##x(__VA_ARGS__);} break
 
@@ -56,11 +58,13 @@ void CTerrainEngine_Impl::Internal_LazyEvaluate(FOperation &stOp)
 
         AutoCase(Perlin, stOp.u32Arg1, *reinterpret_cast<float*>(&stOp.u32Arg2));
         AutoCase(Erode, stOp.u32Arg1, stOp.u32Arg2, stOp.u32Arg3);
+        AutoCase(ErodeByNormals, stOp.u32Arg1, stOp.u32Arg2);
 
         
         case EOperationTypes::TOTAL_OPERATION_TYPES:
             break;
         default:
+            throw std::exception();
             break;
     }
 }
@@ -92,6 +96,22 @@ uint32_t CTerrainEngine_Impl::Internal_IsIndexSafe(uint32_t uLayerIndex)
     return (uLayerIndex < this->m_vpvData.size());
 }
 
+CHydraulicErosion* CTerrainEngine_Impl::Internal_GetBestEroder(uint32_t uFilterSize, uint32_t uSeed, FLOAT_TYPE fWaterLevel)
+{
+    // Check GPU
+    #ifdef TE_USE_GPU
+        try
+        {
+            return new CGPUHydraulicErosion(uFilterSize, uSeed, fWaterLevel);
+        }
+        catch (...)
+        {
+            return new CHydraulicErosion(uFilterSize, uSeed, fWaterLevel);
+        }
+    #else
+        return new CHydraulicErosion(uFilterSize, uSeed, fWaterLevel);
+    #endif
+}
 
 ////// ////// //////
 // Private Generation
@@ -107,7 +127,45 @@ void CTerrainEngine_Impl::Internal_Erode(uint32_t uLayerIndex, uint32_t uSteps, 
     auto oVecData = GetInner(oVec);
     auto iVecData = GetInner(iVec);
 
-    auto eroder = CHydraulicErosion(uFilterSize, 0);
+    auto eroder = Internal_GetBestEroder(uFilterSize, 0, m_fWaterLevel);
+
+// #ifdef TE_USE_GPU
+//     auto eroder = Internal_GetBestEroder(uFilterSize, 0, m_fWaterLevel);
+// #else
+//     auto eroder = CHydraulicErosion(uFilterSize, 0, m_fWaterLevel);
+// #endif
+    // Buffer Rotations
+    FLOAT_TYPE* l_pBuffers[2] = {iVecData, oVecData};
+    std::shared_ptr<std::vector<FLOAT_TYPE>> l_pBufferPtrs[2] = {iVec, oVec};
+    uint8_t uBufferIndex = 0;
+
+    for(uint32_t step = 0; step < uSteps; ++step)
+    {
+        eroder->Erode(
+            l_pBuffers[uBufferIndex],
+            l_pBuffers[!uBufferIndex],
+            m_uHeight,
+            m_uWidth,
+            0.1f
+        );
+
+        // Flip the buffer
+        uBufferIndex = !uBufferIndex;
+    }
+
+    this->m_vpvData[uLayerIndex] = l_pBufferPtrs[uBufferIndex];
+}
+
+void CTerrainEngine_Impl::Internal_ErodeByNormals(uint32_t uLayerIndex, uint32_t uSteps)
+{
+    auto iVec = this->m_vpvData[uLayerIndex];
+    auto oVec = std::make_shared<std::vector<FLOAT_TYPE>>(std::vector<FLOAT_TYPE>(m_uHeight * m_uWidth));
+    oVec->resize(m_uHeight * m_uWidth);
+
+    auto oVecData = GetInner(oVec);
+    auto iVecData = GetInner(iVec);
+
+    auto eroder = Internal_GetBestEroder(m_uFilterSize, 0, m_fWaterLevel);
 
     // Buffer Rotations
     FLOAT_TYPE* l_pBuffers[2] = {iVecData, oVecData};
@@ -116,12 +174,12 @@ void CTerrainEngine_Impl::Internal_Erode(uint32_t uLayerIndex, uint32_t uSteps, 
 
     for(uint32_t step = 0; step < uSteps; ++step)
     {
-        eroder.Erode(
+        eroder->ErodeByNormals(
             l_pBuffers[uBufferIndex],
             l_pBuffers[!uBufferIndex],
             m_uHeight,
             m_uWidth,
-            0.1f
+            0.001f // This one is aggressive
         );
 
         // Flip the buffer

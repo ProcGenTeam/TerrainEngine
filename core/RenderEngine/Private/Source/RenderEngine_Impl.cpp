@@ -59,12 +59,12 @@ glm::vec3 GetNormal(
     {
 
 
-        auto rT = lPtr[(uY-1) * uTerrainWidth + uX] * 255;
-        auto rB = lPtr[(uY+1) * uTerrainWidth + uX] * 255;
+        auto rT = lPtr[(uY+1) * uTerrainWidth + uX] * 255;
+        auto rB = lPtr[(uY-1) * uTerrainWidth + uX] * 255;
         auto rR = lPtr[(uY) * uTerrainWidth + (uX+1)] * 255;
         auto rL = lPtr[(uY) * uTerrainWidth + (uX-1)] * 255;
 
-        return glm::normalize(glm::vec3(2 * (rR-rL), -4, 2 * (rB-rT)));
+        return glm::normalize(glm::vec3(2 * (rL-rR), 4, 2 * (rB-rT)));
 
         //auto rC = glm::vec3(uX, uY, lPtr[uY * uTerrainWidth + uX] * 255);
     }
@@ -80,13 +80,17 @@ glm::vec4 CRenderEngine_Impl::MarchRay_FixedStep
     uint32_t uTerrainWidth
 )
 {
-    glm::vec3 v3LightLocation(m_stSettings.uWorldScaleUnits / 2, 66, m_stSettings.uWorldScaleUnits / 2);
+    glm::vec3 v3LightLocation(m_stSettings.uWorldScaleUnits / 2, 210, m_stSettings.uWorldScaleUnits / 2);
     float fImpactLocation = m_stSettings.fFarClip;
     auto rayPos = v3RayOrigin;
 
     auto landPtr = terrainView->data();
 
     auto lCounter = 0;
+    // Ratio of height would be the downsampling factor
+    // I.E. it would be the width / scaledUnits
+    //auto fDownsampleRatio = uTerrainWidth / float(m_stSettings.uWorldScaleUnits);
+    auto landScale = m_stSettings.fWorldHeightRenderScale;// * fDownsampleRatio;
 
     while(true)
     {
@@ -101,13 +105,14 @@ glm::vec4 CRenderEngine_Impl::MarchRay_FixedStep
         auto uZ = uint32_t((nextSample.z / m_stSettings.uWorldScaleUnits) * uTerrainWidth);
 
         // Grid Bounds
-        if(uX >= uTerrainWidth || uX < 0 || uZ >= uTerrainWidth || uZ < 0)
+        //if(uX >= uTerrainWidth || uX < 0 || uZ >= uTerrainWidth || uZ < 0)
+        if(nextSample.x > m_stSettings.uWorldScaleUnits || nextSample.x < 0 || nextSample.z > m_stSettings.uWorldScaleUnits || nextSample.z < 0)
         {
             break;
         }
-
         // Landscape
-        if(nextSample.y < landPtr[uZ * uTerrainWidth + uX] * 64)
+        
+        if(nextSample.y < landPtr[uZ * uTerrainWidth + uX] * landScale)
         {
             //fImpactLocation = float(lCounter);//glm::distance(v3RayOrigin, rayPos);
             fImpactLocation = glm::distance(v3RayOrigin, rayPos);
@@ -124,7 +129,7 @@ glm::vec4 CRenderEngine_Impl::MarchRay_FixedStep
     auto lightHit = sphereIntersect(v3RayOrigin, v3RayDirection, v3LightLocation, 10.f);
     if(lightHit >m_stSettings.fNearClip && lightHit < fImpactLocation)
     {
-        return glm::vec4(-1);
+        return glm::vec4(1);
     }
 
     // PatchRegion
@@ -135,9 +140,27 @@ glm::vec4 CRenderEngine_Impl::MarchRay_FixedStep
     auto normal = GetNormal(terrainView, uTerrainWidth, uX, uZ);
 
     // Dot NormalVLight
-    auto lAtt = glm::dot(normal, rayPos - v3LightLocation);
+    auto lDirection = v3LightLocation - rayPos;
+    //lDirection = glm::vec3(0,1,0);
+    auto lAtt = glm::dot(normal, glm::normalize(lDirection));
 
-    return glm::vec4(lAtt);
+    // printf("Dir: %f %f %f\nItem: %f %f %f\nPos: %f %f %f\n\n",
+    // lDirection.x, lDirection.y, lDirection.z,
+    // normal.x, normal.y, normal.z,
+    // lAtt, lAtt, lAtt
+    // ); 
+    
+    auto sqDist = glm::dot(lDirection, lDirection);
+
+    // Prevent 
+    auto fLightFalloff = float(1024 * 1024);
+    auto deltaLight = (fLightFalloff - sqDist);//glm::distance(v3LightLocation, rayPos));
+    deltaLight = glm::clamp(deltaLight / fLightFalloff, 0.f, 1.f);
+    lAtt = glm::clamp(lAtt, 0.f, 1.f);
+
+    //return glm::vec4(glm::clamp(lDirection, 0.f, 1.f) * lAtt, 1.f);
+    //return glm::vec4(normal, 1.f);
+    return glm::vec4(lAtt);// * deltaLight);
 }
 
 
@@ -228,15 +251,15 @@ void CRenderEngine_Impl::MarchedRender(std::string filename, std::shared_ptr<std
 
     // Camera
     //glm::vec3 v3CameraLocation(uTerrainWidth / 4, uTerrainWidth / 2, 64);
-    glm::vec3 v3CameraLocation(0, 64, 0);
+    glm::vec3 v3CameraLocation(768, m_stSettings.fWorldHeightRenderScale + 10, 768);
     // Lookat from origin
     glm::mat4 cameraTransform = glm::lookAtLH(v3CameraLocation, glm::vec3(m_stSettings.uWorldScaleUnits / 2, 0, m_stSettings.uWorldScaleUnits / 2), glm::vec3(0,1,0));
     cameraTransform = glm::inverse(cameraTransform);
 
-    printf("\n%f %f %f %f\n", cameraTransform[0].r, cameraTransform[0].g, cameraTransform[0].b, cameraTransform[0].w);
-    printf("%f %f %f %f\n", cameraTransform[1].r, cameraTransform[1].g, cameraTransform[1].b, cameraTransform[1].w);
-    printf("%f %f %f %f\n", cameraTransform[2].r, cameraTransform[2].g, cameraTransform[2].b, cameraTransform[2].w);
-    printf("%f %f %f %f\n", cameraTransform[3].r, cameraTransform[3].g, cameraTransform[3].b, cameraTransform[3].w);
+    // printf("\n%f %f %f %f\n", cameraTransform[0].r, cameraTransform[0].g, cameraTransform[0].b, cameraTransform[0].w);
+    // printf("%f %f %f %f\n", cameraTransform[1].r, cameraTransform[1].g, cameraTransform[1].b, cameraTransform[1].w);
+    // printf("%f %f %f %f\n", cameraTransform[2].r, cameraTransform[2].g, cameraTransform[2].b, cameraTransform[2].w);
+    // printf("%f %f %f %f\n", cameraTransform[3].r, cameraTransform[3].g, cameraTransform[3].b, cameraTransform[3].w);
 
     // cameraTransform = glm::mat4(1);
     // cameraTransform = glm::translate(cameraTransform, v3CameraLocation);
@@ -254,49 +277,69 @@ void CRenderEngine_Impl::MarchedRender(std::string filename, std::shared_ptr<std
 	//cameraTransform = glm::rotate(cameraTransform, 0.25f * 3.1415926535f, glm::vec3(0,0,1));
 
 
-
-    for(uint32_t p = 0; p < image.size(); ++p)
+    uint32_t bucketSize = 128;
+    // Make Buckets
+    for (uint32_t a = 0; a < m_stSettings.uHeight / bucketSize; ++a)
     {
-        float localSpaceGridHitX = ((float(p % m_stSettings.uWidth) / m_stSettings.uWidth) - 0.5f) * 2.f;
-        float localSpaceGridHitY = ((float(p / m_stSettings.uWidth) / m_stSettings.uWidth) - 0.5f) * 2.f;
+        for (uint32_t b = 0; b < m_stSettings.uWidth / bucketSize; ++b)
+        {
+            uint32_t bucketId = a * m_stSettings.uWidth / bucketSize + b;
+	        //printf("Bucketing: Xf:%d Yf:%d Xt:%d Yt:%d BId:%d\n",a * bucketSize,b * bucketSize, (a + 1) * bucketSize - 1, (b + 1) * bucketSize - 1, bucketId);
+        #ifdef NDEBUG
+        #pragma omp parallel for
+        #endif
+            //for(uint32_t p = 0; p < image.size(); ++p)
+            for(uint32_t p = 0; p < bucketSize * bucketSize; ++p)
+            {
+                //float localSpaceGridHitX = ((float(p % m_stSettings.uWidth) / m_stSettings.uWidth) - 0.5f) * 2.f;
+                //float localSpaceGridHitY = ((float(p / m_stSettings.uWidth) / m_stSettings.uWidth) - 0.5f) * 2.f;
 
-        // auto localSpaceGridHit = glm::vec4(
-        //     m_stSettings.fCameraDistance, 
-        //     localSpaceGridHitX * m_stSettings.fSensorSizeX,
-        //     -localSpaceGridHitY * m_stSettings.fSensorSizeY,
-        //     1.0f     
-        //     );
-        
-        auto localSpaceGridHit = glm::vec4(
-            localSpaceGridHitX * m_stSettings.fSensorSizeX,
-            -localSpaceGridHitY * m_stSettings.fSensorSizeY,
-            m_stSettings.fCameraDistance,
-            1.0f     
-            );
+                uint32_t pixelX = (b * bucketSize + (p % bucketSize));
+            	uint32_t pixelY = (a * bucketSize + (p / bucketSize));
+                float localSpaceGridHitX = ((float(pixelX) / m_stSettings.uWidth) - 0.5f) * 2.f;
+                float localSpaceGridHitY = ((float(pixelY) / m_stSettings.uHeight) - 0.5f) * 2.f;
+            
 
-        //printf("LSG: %f %f %f %f\n", localSpaceGridHit.r, localSpaceGridHit.g, localSpaceGridHit.b, localSpaceGridHit.w);
+                // auto localSpaceGridHit = glm::vec4(
+                //     m_stSettings.fCameraDistance, 
+                //     localSpaceGridHitX * m_stSettings.fSensorSizeX,
+                //     -localSpaceGridHitY * m_stSettings.fSensorSizeY,
+                //     1.0f     
+                //     );
+                
+                auto localSpaceGridHit = glm::vec4(
+                    localSpaceGridHitX * m_stSettings.fSensorSizeX,
+                    -localSpaceGridHitY * m_stSettings.fSensorSizeY,
+                    m_stSettings.fCameraDistance,
+                    1.0f     
+                    );
 
-        auto worldSpaceRayHit = cameraTransform * localSpaceGridHit;
+                //printf("LSG: %f %f %f %f\n", localSpaceGridHit.r, localSpaceGridHit.g, localSpaceGridHit.b, localSpaceGridHit.w);
 
-        //printf("WSR: %f %f %f %f\n", worldSpaceRayHit.r, worldSpaceRayHit.g, worldSpaceRayHit.b, worldSpaceRayHit.w);
+                auto worldSpaceRayHit = cameraTransform * localSpaceGridHit;
 
-        auto worldSpaceRayTransform = (worldSpaceRayHit / worldSpaceRayHit.w).xyz() - v3CameraLocation;
+                //printf("WSR: %f %f %f %f\n", worldSpaceRayHit.r, worldSpaceRayHit.g, worldSpaceRayHit.b, worldSpaceRayHit.w);
 
-        auto worldSpaceRayDirection = glm::normalize(
-            worldSpaceRayTransform
-            );
+                auto worldSpaceRayTransform = (worldSpaceRayHit / worldSpaceRayHit.w).xyz() - v3CameraLocation;
 
-        //printf("WSD: %f %f %f\n", worldSpaceRayDirection.r, worldSpaceRayDirection.g, worldSpaceRayDirection.b);
-        
-        // Ray March using quanitised steps
-        image[p] = MarchRay_FixedStep(
-            terrainView,
-            v3CameraLocation,
-            worldSpaceRayDirection,
-            uTerrainWidth
-        ).xyz();
+                auto worldSpaceRayDirection = glm::normalize(
+                    worldSpaceRayTransform
+                    );
+
+                //printf("WSD: %d %d\n", pixelX, pixelY);
+                
+                // Ray March using quanitised steps
+                //image[p] = 
+                image[pixelY * m_stSettings.uWidth + pixelX] = MarchRay_FixedStep(
+                    terrainView,
+                    v3CameraLocation,
+                    worldSpaceRayDirection,
+                    uTerrainWidth
+                ).xyz();
+            }
+
+        }
     }
-
     std::ofstream out(filename, std::ios::binary);
     out.write(
         reinterpret_cast<char *>(&m_stSettings.uWidth),

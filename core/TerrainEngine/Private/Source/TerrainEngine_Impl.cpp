@@ -1,4 +1,5 @@
 #include "TerrainEngine/Private/Header/TerrainEngine_Impl.h"
+#include "Common/Public/Header/Types.h"
 #include "TerrainEngine/Private/Header/PerlinNoise.h"
 #include "TerrainEngine/Private/Header/HydraulicErosion.h"
 //#include <bits/stdint-uintn.h>
@@ -7,7 +8,7 @@
 
 CTerrainEngine_Impl::CTerrainEngine_Impl
 (
-    uint32_t uWaterLevel,
+    FLOAT_TYPE fWaterLevel,
     uint32_t uWidth,
     uint32_t uHeight,
     int32_t iXOffset,
@@ -16,7 +17,7 @@ CTerrainEngine_Impl::CTerrainEngine_Impl
     uint32_t uOverscan,
     uint32_t uFilterSize
 ) : 
-    m_uWaterLevel(uWaterLevel),
+    m_fWaterLevel(fWaterLevel),
     m_uOverScan(std::max(uOverscan, uFilterSize * 2)),
     m_uWidth(uWidth + uOverscan * 2),
     m_uHeight(uHeight + uOverscan * 2),
@@ -41,13 +42,13 @@ CTerrainEngine_Impl::CTerrainEngine_Impl
 
 CTerrainEngine_Impl::CTerrainEngine_Impl
 (
-    uint32_t uWaterLevel,
+    FLOAT_TYPE fWaterLevel,
     std::unique_ptr<std::vector<FLOAT_TYPE>> vWorld,
     uint32_t uWidth,
     float fScale,
     uint32_t uOverscan
 ) : 
-    m_uWaterLevel(uWaterLevel),
+    m_fWaterLevel(fWaterLevel),
     m_uOverScan(uOverscan),
     m_uWidth(uWidth),
     m_fGlobalScale(fScale),
@@ -131,7 +132,9 @@ void CTerrainEngine_Impl::Erode(uint32_t uLayerIndex, uint32_t uSteps, uint32_t 
 {
     // Memory
     Internal_TrackMemoryLoad(sizeof(FLOAT_TYPE) * m_uHeight * m_uWidth, EMemoryUseTypes::MethodMemory);
-    Internal_TrackMemoryLoad(sizeof(glm::vec3) * m_uHeight * m_uWidth, EMemoryUseTypes::MethodMemory);
+    Internal_TrackMemoryLoad(sizeof(glm::vec4) * m_uHeight * m_uWidth, EMemoryUseTypes::MethodMemory);
+    Internal_TrackMemoryLoad(sizeof(float) * 8 * m_uHeight * m_uWidth, EMemoryUseTypes::MethodMemory);
+    //Internal_TrackMemoryLoad(sizeof(glm::vec3) * m_uHeight * m_uWidth, EMemoryUseTypes::MethodMemory);
 
     // Memory use isn't overly useful here
     if(this->m_bImmediateMode)
@@ -149,7 +152,30 @@ void CTerrainEngine_Impl::Erode(uint32_t uLayerIndex, uint32_t uSteps, uint32_t 
     }
 
     Internal_TrackMemoryLoad(-sizeof(FLOAT_TYPE) * m_uHeight * m_uWidth, EMemoryUseTypes::MethodMemory);
-    Internal_TrackMemoryLoad(-sizeof(glm::vec3) * m_uHeight * m_uWidth, EMemoryUseTypes::MethodMemory);
+    Internal_TrackMemoryLoad(-sizeof(glm::vec4) * m_uHeight * m_uWidth, EMemoryUseTypes::MethodMemory);
+    Internal_TrackMemoryLoad(-sizeof(float) * 8 * m_uHeight * m_uWidth, EMemoryUseTypes::MethodMemory);
+}
+
+void CTerrainEngine_Impl::ErodeByNormals(uint32_t uLayerIndex, uint32_t uSteps)
+{
+    // Memory
+    Internal_TrackMemoryLoad(sizeof(FLOAT_TYPE) * m_uHeight * m_uWidth, EMemoryUseTypes::MethodMemory);
+
+    // Memory use isn't overly useful here
+    if(this->m_bImmediateMode)
+    {
+        Internal_ErodeByNormals(uLayerIndex, uSteps);
+    }
+    else
+    {
+        FOperation op{};
+        op.OpType = EOperationTypes::ErodeByNormals;
+        op.u32Arg1 = uLayerIndex;
+        op.u32Arg2 = uSteps;
+        m_vQueue.push_back(std::move(op));
+    }
+
+    Internal_TrackMemoryLoad(-sizeof(FLOAT_TYPE) * m_uHeight * m_uWidth, EMemoryUseTypes::MethodMemory);
 }
 
 void CTerrainEngine_Impl::Perlin(uint32_t uLayerIndex, float fScale)

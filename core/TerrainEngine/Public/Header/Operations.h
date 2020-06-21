@@ -14,6 +14,7 @@ enum class EMemoryUseTypes : uint32_t
 enum class EOperationTypes : uint32_t
 {
     Erode,
+    ErodeByNormals,
     Perlin,
 
     CreateLayer,

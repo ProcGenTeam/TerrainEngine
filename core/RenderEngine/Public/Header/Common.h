@@ -11,6 +11,8 @@ struct FCameraSettings
     float fFarClip;
     float fNearClip;
 
+    float fWorldHeightRenderScale;
+
     uint32_t uWorldScaleUnits;
 
     uint32_t uWidth;

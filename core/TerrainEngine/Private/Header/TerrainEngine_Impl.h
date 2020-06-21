@@ -2,13 +2,15 @@
 #include <cstdint>
 #include <memory>
 #include <vector>
+#include "Common/Public/Header/Types.h"
 #include "TerrainEngine/Public/Header/Operations.h"
 #include "TerrainEngine/Public/Header/Defines.h"
+#include "TerrainEngine/Private/Header/HydraulicErosion.h"
 
 class CTerrainEngine_Impl
 {
     private:
-        uint32_t m_uWaterLevel;
+        FLOAT_TYPE m_fWaterLevel;
         uint32_t m_uWidth;
         uint32_t m_uHeight;
         int32_t m_iXOffset;
@@ -51,10 +53,13 @@ class CTerrainEngine_Impl
         //////
         virtual void Internal_TrackMemoryLoad(int64_t iMemoryUse, EMemoryUseTypes eMemoryType);
 
+        virtual CHydraulicErosion* Internal_GetBestEroder(uint32_t uFilterSize, uint32_t uSeed, FLOAT_TYPE fWaterLevel);
+
         ////// ////// //////
         // Private Generation
         //
         virtual void Internal_Erode(uint32_t uLayerIndex, uint32_t uSteps, uint32_t uFilterSize);
+        virtual void Internal_ErodeByNormals(uint32_t uLayerIndex, uint32_t uSteps);
         virtual void Internal_Perlin(uint32_t uLayerIndex, float fScale);
 
         ////// ////// //////
@@ -80,8 +85,8 @@ class CTerrainEngine_Impl
         virtual void Internal_DivLayerScalar(uint32_t uDstLayer, uint32_t uSrcLayer, float fScalar);
 
     public:
-        CTerrainEngine_Impl(uint32_t uWaterLevel, uint32_t uWidth, uint32_t uHeight, int32_t iXOffset = 0, int32_t iYOffset = 0, float fScale = 0.001f, uint32_t uOverscan = 2, uint32_t uFilterSize = 2);
-        CTerrainEngine_Impl(uint32_t uWaterLevel, std::unique_ptr<std::vector<FLOAT_TYPE>> vWorld, uint32_t uWidth, float fScale = 0.001f, uint32_t uOverscan = 2);
+        CTerrainEngine_Impl(FLOAT_TYPE fWaterLevel, uint32_t uWidth, uint32_t uHeight, int32_t iXOffset = 0, int32_t iYOffset = 0, float fScale = 0.001f, uint32_t uOverscan = 2, uint32_t uFilterSize = 2);
+        CTerrainEngine_Impl(FLOAT_TYPE fWaterLevel, std::unique_ptr<std::vector<FLOAT_TYPE>> vWorld, uint32_t uWidth, float fScale = 0.001f, uint32_t uOverscan = 2);
         virtual ~CTerrainEngine_Impl();
 
         ////// ////// //////
@@ -104,6 +109,7 @@ class CTerrainEngine_Impl
         // Generation
         //
         virtual void Erode(uint32_t uLayerIndex, uint32_t uSteps, uint32_t uFilterSize = 0);
+        virtual void ErodeByNormals(uint32_t uLayerIndex, uint32_t uSteps);
         virtual void Perlin(uint32_t uLayerIndex, float fScale);
 
         ////// ////// //////

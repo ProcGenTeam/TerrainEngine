@@ -1,4 +1,5 @@
 #pragma once
+#include "Common/Public/Header/Types.h"
 #include <cstdint>
 #include <vector>
 #include <random>
@@ -38,13 +39,37 @@ struct FExitGradParams
     float fOneOverHeight;
 };
 
+struct FHydFloatCombiner
+{
+    float values[8];
+};
+
+struct FHydUIntCombiner
+{
+    uint32_t values[8];
+};
+static_assert(sizeof(FHydFloatCombiner) == 8*4);
+
 class CHydraulicErosion
 {
-    private:
+    protected:
         int32_t m_iOverscan;
+        FLOAT_TYPE m_fWaterLevel;
+
+        FLOAT_TYPE m_fEvaporation;
+        FLOAT_TYPE m_fSedimentCapacity;
+        FLOAT_TYPE m_fDeposition;
+        FLOAT_TYPE m_fSoilSoftness;
+
+        FLOAT_TYPE m_fWorldVerticalScale;
+
         std::mt19937_64 m_mtRandGen;
         std::normal_distribution<float> m_distNormal;
         std::vector<glm::vec3> m_vv3GradientMap;
+        std::vector<glm::vec4> m_vv4WaterMap;
+
+        std::vector<FHydFloatCombiner> m_vstWaterCombiner;
+        std::vector<FHydFloatCombiner> m_vstSedimentCombiner;
 
         virtual glm::vec3 GradientSum(FGradSumParams &stParams);
             //FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t uX, uint32_t uY, uint32_t uWidth, uint16_t uFilterWidth);
@@ -55,9 +80,12 @@ class CHydraulicErosion
         virtual void GenerateGradientMap(FLOAT_TYPE *pHeight, uint32_t uWidth, uint32_t uHeight);
 
     public:
-        CHydraulicErosion(int32_t iOverscan, uint32_t uSeed);
+        CHydraulicErosion(int32_t iOverscan, uint32_t uSeed, FLOAT_TYPE fWaterLevel = 0.1f);
         ~CHydraulicErosion();
 
+        virtual void TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t uHeight, uint32_t uWidth, float fScale = 0.1f);
+
         virtual void Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t uHeight, uint32_t uWidth, float fScale = 0.1f);
+        virtual void ErodeByNormals(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t uHeight, uint32_t uWidth, float fScale = 0.1f);
         //virtual void Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t uHeight, uint32_t uWidth, float fScale = 0.1f);
 };

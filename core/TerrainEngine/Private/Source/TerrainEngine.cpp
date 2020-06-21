@@ -3,8 +3,8 @@
 
 #define Super (reinterpret_cast<CTerrainEngine_Impl*>(this->m_implementation))
 
-TerrainEngine::CTerrainEngine::CTerrainEngine(uint32_t uWaterLevel, uint32_t uWidth, uint32_t uHeight, int32_t iXOffset, int32_t iYOffset, float fScale, uint32_t uOverscan, uint32_t uFilterSize)
- : m_implementation(new CTerrainEngine_Impl(uWaterLevel, uWidth, uHeight, iXOffset, iYOffset, fScale, uOverscan, uFilterSize))
+TerrainEngine::CTerrainEngine::CTerrainEngine(FLOAT_TYPE fWaterLevel, uint32_t uWidth, uint32_t uHeight, int32_t iXOffset, int32_t iYOffset, float fScale, uint32_t uOverscan, uint32_t uFilterSize)
+ : m_implementation(new CTerrainEngine_Impl(fWaterLevel, uWidth, uHeight, iXOffset, iYOffset, fScale, uOverscan, uFilterSize))
 {
 
 }
@@ -48,9 +48,14 @@ void TerrainEngine::CTerrainEngine::Render()
 ////// ////// //////
 // Generation
 //
-void TerrainEngine::CTerrainEngine::Erode(uint32_t uLayerIndex, uint32_t uSteps)
+void TerrainEngine::CTerrainEngine::Erode(uint32_t uLayerIndex, uint32_t uSteps, uint32_t uFilterSize)
 {
-    Super->Erode(uLayerIndex, uSteps);
+    Super->Erode(uLayerIndex, uSteps, uFilterSize);
+}
+
+void TerrainEngine::CTerrainEngine::ErodeByNormals(uint32_t uLayerIndex, uint32_t uSteps)
+{
+    Super->ErodeByNormals(uLayerIndex, uSteps);
 }
 
 void TerrainEngine::CTerrainEngine::Perlin(uint32_t uLayerIndex, float fScale)

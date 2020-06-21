@@ -15,7 +15,7 @@ class TERRAIN_ENGINE_API CTerrainEngine
         void *m_implementation;
     public:
     // Methods
-        CTerrainEngine(uint32_t uWaterLevel, uint32_t uWidth, uint32_t uHeight, int32_t iXOffset = 0, int32_t iYOffset = 0, float fScale = 0.001f, uint32_t uOverscan = 2, uint32_t uFilterSize = 2);
+        CTerrainEngine(FLOAT_TYPE fWaterLevel, uint32_t uWidth, uint32_t uHeight, int32_t iXOffset = 0, int32_t iYOffset = 0, float fScale = 0.001f, uint32_t uOverscan = 2, uint32_t uFilterSize = 2);
         ~CTerrainEngine();
 
         ////// ////// //////
@@ -34,7 +34,8 @@ class TERRAIN_ENGINE_API CTerrainEngine
         ////// ////// //////
         // Generation
         //
-        void Erode(uint32_t uLayerIndex, uint32_t uSteps);
+        void Erode(uint32_t uLayerIndex, uint32_t uSteps, uint32_t uFilterSize = 0);
+        void ErodeByNormals(uint32_t uLayerIndex, uint32_t uSteps);
         void Perlin(uint32_t uLayerIndex, float fScale);
 
         ////// ////// //////
