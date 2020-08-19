@@ -10,21 +10,28 @@
 
 #define GetScaledHeight(x) (pHeight[x] * m_fWorldVerticalScale)
 #define GetScaled(x) ((x) * m_fWorldVerticalScale)
+#define GetWorldX(x) ((x) + m_iOffsetX)
+#define GetWorldY(y) ((y) + m_iOffsetY)
+#define GetWorldXY(x, width) ( (x) + (m_iOffsetY * (width) + m_iOffsetX) )
 
 CHydraulicErosion::CHydraulicErosion
 (
     int32_t iOverscan,
     uint32_t uSeed,
+    int32_t iOffsetX,
+    int32_t iOffsetY,
     FLOAT_TYPE fWaterLevel
 ) :
     m_iOverscan(iOverscan),
+    m_iOffsetX(iOffsetX),
+    m_iOffsetY(iOffsetY),
     m_mtRandGen(std::mt19937_64(uSeed)),
     m_distNormal(std::normal_distribution<float>(1.0, 0.1)),
     m_fWaterLevel(fWaterLevel),
-    m_fDeposition(0.1f),
+    m_fDeposition(0.05f),
     m_fEvaporation(0.01f),
-    m_fSedimentCapacity(0.05f),
-    m_fSoilSoftness(0.4f),
+    m_fSedimentCapacity(30.f),
+    m_fSoilSoftness(0.2f),
     m_fWorldVerticalScale(4000)
 {
     
@@ -222,7 +229,7 @@ void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
 #else
     uint32_t uSteps = 1024;
 #endif
-    uSteps = 3000;
+    uSteps = 5000;
     float fStep = 1.f / uSteps;
 
     // Resize Arrays
@@ -262,7 +269,15 @@ void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
     {
         if(s % 500 == 0){printf("Stepping %d\n",s);}
 
-        if(s != 0 && s % 15 == 0 && s < 2500)
+        float fTotalWaterRemaining = 0;
+        for (uint32_t i = 0; i < m_vv4WaterMap.size(); ++i)
+        {
+           fTotalWaterRemaining += m_vv4WaterMap[i].x;
+        }
+        if(s % 25 == 0){printf("Pre Rain Water: %f\n",fTotalWaterRemaining);}
+
+
+        if(s != 0 && s % 2 == 0 && s < (uSteps * 0.9))
         {
 
             #ifdef NDEBUG
@@ -270,10 +285,18 @@ void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
             #endif
             for (uint32_t i = 0; i < m_vv4WaterMap.size(); ++i)
             {
-                m_vv4WaterMap[i].x += (pHeight[i] * 0.01);
+                m_vv4WaterMap[i].x += (m_fEvaporation * 0.001);// 0.000025);
+                //m_vv4
             }
             //printf("Finished Adding Water\n");
         }
+
+        fTotalWaterRemaining = 0;
+        for (uint32_t i = 0; i < m_vv4WaterMap.size(); ++i)
+        {
+           fTotalWaterRemaining += m_vv4WaterMap[i].x;
+        }
+        if(s % 25 == 0){printf("Water: %f\n",fTotalWaterRemaining);}
 
         // Calculation Step 
 
@@ -397,6 +420,7 @@ void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
             m_vv4WaterMap[x].x -= m_vv4WaterMap[x].z;
             m_vv4WaterMap[x].y -= m_vv4WaterMap[x].w;
 
+            if (m_vv4WaterMap[x].y < 0) {printf("WARN: Sed < 0\n");}
 
             for(uint32_t sp = 0; sp < 8; ++sp)
             {
@@ -439,6 +463,7 @@ void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
             {
                 // More Sediment
                 auto sedCapacity = m_fSedimentCapacity * m_vv4WaterMap[x].x;
+                //if (x == 0) {printf("%f\n", sedCapacity);}
                 if(m_vv4WaterMap[x].y >= sedCapacity)
                 {
                     // Deposit everything that is over cap
@@ -449,7 +474,7 @@ void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
                 else
                 {
                     // Pick up the sediment
-                    float rngMod = 1 - 0.05 * (float(uint32_t(6364136223846793005 * x + 1442695040888963407)) / float(UINT32_MAX));
+                    float rngMod = 1 - 0.1 * (double(uint64_t(6364136223846793005 * GetWorldXY(x, uWidth) + 1442695040888963407)) / double(UINT64_MAX));
 
                     //printf("%f\n", rngMod);
 
@@ -472,55 +497,60 @@ void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
             //pOut[x] = stack->values[1];// pHeight[x] + m_vv4WaterMap[x].x; 
         }
 
-        // // Sediment Prep Step
-        // #ifdef NDEBUG
-        // #pragma omp parallel for
-        // #endif
-        // for(uint32_t x = 0; x < m_vv4WaterMap.size(); ++x)
-        // {
-        //     // Prep Smooth
-        //     auto ry = x / uWidth;
-        //     auto rx = x % uWidth;
+    //     // Sediment Prep Step
+    //     #ifdef NDEBUG
+    //     #pragma omp parallel for
+    //     #endif
+    //     for(uint32_t y = 0; y < uHeight; ++y)
+    //     {
+    //         auto my = y * uWidth;
 
-        //     //printf("At %d %d\n", ry, rx);
-            
-        //     uint32_t nNeighbours = 0;
-        //     float fAvgSilt = 0;
-
-        //     for(uint32_t ln = 0; ln < 9; ++ln)
-        //     {
-        //         // Calculate the proportional share of the water
-
-        //         int32_t yMod = ln / 3 - 1;
-        //         int32_t xMod = ln % 3 - 1;
+    //         for(uint32_t x = 0; x < uWidth; ++x)
+    //         {
+    //             // Prep Smooth
+    //             auto mx = x;
+    //             //printf("At %d %d\n", ry, rx);
                 
-        //         auto yReal = ry + yMod;
-        //         auto xReal = rx + xMod;
+    //             uint32_t nNeighbours = 0;
+    //             float fAvgSilt = 0;
 
-        //         // Bounds
-        //         if (yReal < 0 || yReal >= uHeight || xReal < 0 || xReal >= uWidth)
-        //         {
-        //             continue;
-        //         }
-                
-        //         fAvgSilt += m_vv4WaterMap[yReal * uWidth + xReal].y;
-        //         ++nNeighbours;
-        //     }
+    //             for(uint32_t ln = 0; ln < 9; ++ln)
+    //             {
+    //                 // Calculate the proportional share of the water
 
-        //     // Worst case, this is 1
-        //     m_vv4WaterMap[x].z = fAvgSilt / nNeighbours;
-        // }
+    //                 int32_t yMod = ln / 3 - 1;
+    //                 int32_t xMod = ln % 3 - 1;
+                    
+    //                 int32_t yReal = y + yMod;
+    //                 int32_t xReal = x + xMod;
 
-        // // Sediment Equaliser Step
-        // #ifdef NDEBUG
-        // #pragma omp parallel for
-        // #endif
-        // for(uint32_t x = 0; x < m_vv4WaterMap.size(); ++x)
-        // {
-        //     m_vv4WaterMap[x].y = m_vv4WaterMap[x].z;
-        //     //m_vv4WaterMap[x].y *= 0.5f;
-        //     m_vv4WaterMap[x].z = 0;
-        // }
+    //                 // Bounds
+    //                 if (yReal < 0 || yReal >= uHeight || xReal < 0 || xReal >= uWidth)
+    //                 {
+    //                     continue;
+    //                 }
+                    
+    //                 fAvgSilt += m_vv4WaterMap[yReal * uWidth + xReal].y;
+    //                 ++nNeighbours;
+    //             }
+
+    //             // Worst case, this is 1
+    //             if ( x==0 && y==0) {printf("%f\n", fAvgSilt / nNeighbours);}
+    //             m_vv4WaterMap[my+x].z = fAvgSilt / nNeighbours;
+    //         }
+    //     }
+
+    //     // Sediment Equaliser Step
+    //     #ifdef NDEBUG
+    //     #pragma omp parallel for
+    //     #endif
+    //     for(uint32_t x = 0; x < m_vv4WaterMap.size(); ++x)
+    //     {
+    //         m_vv4WaterMap[x].y = m_vv4WaterMap[x].z * 0.5;
+    //         //m_vv4WaterMap[x].y *= 0.5f;
+    //         m_vv4WaterMap[x].z = 0;
+    //     }
+    
     }
 
     // Sediment Equaliser Step

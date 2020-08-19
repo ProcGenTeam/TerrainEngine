@@ -63,6 +63,9 @@ class CHydraulicErosion
 
         FLOAT_TYPE m_fWorldVerticalScale;
 
+        int32_t m_iOffsetX;
+        int32_t m_iOffsetY;
+
         std::mt19937_64 m_mtRandGen;
         std::normal_distribution<float> m_distNormal;
         std::vector<glm::vec3> m_vv3GradientMap;
@@ -80,7 +83,7 @@ class CHydraulicErosion
         virtual void GenerateGradientMap(FLOAT_TYPE *pHeight, uint32_t uWidth, uint32_t uHeight);
 
     public:
-        CHydraulicErosion(int32_t iOverscan, uint32_t uSeed, FLOAT_TYPE fWaterLevel = 0.1f);
+        CHydraulicErosion(int32_t iOverscan, uint32_t uSeed, int32_t iOffsetX, int32_t iOffsetY, FLOAT_TYPE fWaterLevel = 0.1f);
         ~CHydraulicErosion();
 
         virtual void TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t uHeight, uint32_t uWidth, float fScale = 0.1f);

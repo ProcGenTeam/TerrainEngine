@@ -6,9 +6,9 @@
 
 int main(int argc, char** argv)
 {
-    float worldScale = 0.5;
+    float worldScale = 0.15;
 
-    uint32_t baseRes = 2048;
+    uint32_t baseRes = 256;
 
     for(int i = 0; i < 1; ++i)
     {
@@ -24,7 +24,7 @@ int main(int argc, char** argv)
             baseRes * x,
             baseRes * y,
             worldScale,
-            16,
+            32,
             2
         );
 
@@ -112,7 +112,7 @@ int main(int argc, char** argv)
             auto view = terrainEngine.GetView(0);
 
             auto rend = CRenderEngine(st);
-            rend.MarchedRender("skyHigh_" + std::to_string(x) + "_" + std::to_string(y) + ".rgb", view, baseRes + 32);
+            rend.MarchedRender("skyHigh_" + std::to_string(x) + "_" + std::to_string(y) + ".rgb", view, baseRes + 64);
         }
 
     }

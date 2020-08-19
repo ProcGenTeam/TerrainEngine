@@ -6,7 +6,7 @@ import numpy
 
 # This is a dumb script
 
-lS = 2048 + 16 * 2
+lS = 1024 + 32 * 2
 
 filename = sys.argv[1]
 fileData = []

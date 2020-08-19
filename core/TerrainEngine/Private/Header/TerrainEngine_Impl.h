@@ -53,7 +53,7 @@ class CTerrainEngine_Impl
         //////
         virtual void Internal_TrackMemoryLoad(int64_t iMemoryUse, EMemoryUseTypes eMemoryType);
 
-        virtual CHydraulicErosion* Internal_GetBestEroder(uint32_t uFilterSize, uint32_t uSeed, FLOAT_TYPE fWaterLevel);
+        virtual CHydraulicErosion* Internal_GetBestEroder(uint32_t uFilterSize, uint32_t uSeed, int32_t iOffsetX, int32_t iOffsetY, FLOAT_TYPE fWaterLevel);
 
         ////// ////// //////
         // Private Generation
