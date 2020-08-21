@@ -28,10 +28,10 @@ CHydraulicErosion::CHydraulicErosion
     m_mtRandGen(std::mt19937_64(uSeed)),
     m_distNormal(std::normal_distribution<float>(1.0, 0.1)),
     m_fWaterLevel(fWaterLevel),
-    m_fDeposition(0.1f),
+    m_fDeposition(0.3f),
     m_fEvaporation(0.01f),
-    m_fSedimentCapacity(5.f),
-    m_fSoilSoftness(0.4f),
+    m_fSedimentCapacity(1.5f),
+    m_fSoilSoftness(0.6f),
     m_fWorldVerticalScale(4000)
 {
     
@@ -229,7 +229,7 @@ void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
 #else
     uint32_t uSteps = 1024;
 #endif
-    uSteps = 5000;
+    uSteps = 3000;
     float fStep = 1.f / uSteps;
 
     // Resize Arrays
@@ -250,8 +250,8 @@ void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
     #endif
     for (uint32_t i = 0; i < m_vv4WaterMap.size(); ++i)
     {
-        float rngMod = 1 + 0.001 * (double(uint64_t(6364136223846793005 * GetWorldXY(i, uWidth) + 1442695040888963407)) / double(UINT64_MAX));
-        m_vv4WaterMap[i].x = 0.00125f * 2.f + (pHeight[i] * rngMod * 0.00125f);
+        float rngMod = 1;// + 0.001 * (double(uint64_t(6364136223846793005 * GetWorldXY(i, uWidth) + 1442695040888963407)) / double(UINT64_MAX));
+        m_vv4WaterMap[i].x = 0.000125f * 2.f;// + (pHeight[i] * rngMod * 0.00125f);
         m_vv4WaterMap[i].y = 0.f;
 
         //printf("Check Water Level at %d is %f vs %f\n", i,  pHeight[i], m_fWaterLevel);
@@ -278,7 +278,7 @@ void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
         if(s % 499 == 0){printf("Pre Rain Water: %f\n",fTotalWaterRemaining);}
 
 
-        if(s != 0 && s % 2 == 0 && s < (uSteps * 0.9))
+        if(s != 0 && s % 50 == 0 && s < (uSteps * 0.9))
         {
 
             #ifdef NDEBUG
@@ -290,11 +290,11 @@ void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
                 //m_vv4WaterMap[i].x += (m_fEvaporation * rngMod);// 0.000025);
                 
                 //m_vv4
-                if(pHeight[i] < m_fWaterLevel)
-                {
-                    //printf("Setting Water Level at %d to %f\n", i, m_fWaterLevel - pHeight[i]);
-                    m_vv4WaterMap[i].x = m_fWaterLevel - pHeight[i];
-                }
+                // if(pHeight[i] < m_fWaterLevel)
+                // {
+                //     //printf("Setting Water Level at %d to %f\n", i, m_fWaterLevel - pHeight[i]);
+                //     m_vv4WaterMap[i].x = m_fWaterLevel - pHeight[i];
+                // }
             }
             //printf("Finished Adding Water\n");
         }
@@ -360,7 +360,7 @@ void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
                     if (checkedWaterLevel >= waterLevel) { continue; }
 
                     // We have water to move
-                    sumHeightDifferent += waterLevel - checkedWaterLevel;
+                    sumHeightDifferent += (waterLevel - checkedWaterLevel);
                     ++nLowerNeighbours;
                     stLowerNeighbours.values[n] = waterLevel - checkedWaterLevel;
                 }
@@ -371,7 +371,7 @@ void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
                 // Calc DeltaW
                 // Or don't
                 auto deltaW = maximalWaterToMove;//std::min(maximalWaterToMove, sumHeightDifferent / nLowerNeighbours);
-                auto sedimentSaturation = m_vv4WaterMap[my+x].y / m_vv4WaterMap[my+x].x;
+                //auto sedimentSaturation = m_vv4WaterMap[my+x].y / m_vv4WaterMap[my+x].x;
                 auto sedimentHere = m_vv4WaterMap[my+x].y;
 
                 for(uint32_t n = 0; n < 8; ++n)
@@ -389,10 +389,12 @@ void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
                     auto yReal = y + yMod;
                     auto xReal = x + xMod;
 
-                    auto ratio = (stLowerNeighbours.values[n] / nLowerNeighbours);
+                    // Changed nNeighbours to heightDelta
+
+                    auto ratio = (stLowerNeighbours.values[n] / sumHeightDifferent);
                     auto waterToMoveHere = deltaW * ratio;
                     auto sedToMoveHere = sedimentHere * ratio;
-                    //printf("%d moving %f water to %d %d\n", n, waterToMoveHere, yMod, xMod);
+                    if (sedToMoveHere < 0) {printf("%d moving %f water to %d %d\n", n, sedToMoveHere, yMod, xMod);}
                     
                     // Sediment To Move is function of the sediment in the water
 
@@ -428,7 +430,7 @@ void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
             m_vv4WaterMap[x].x -= m_vv4WaterMap[x].z / m_fWorldVerticalScale;
             m_vv4WaterMap[x].y -= m_vv4WaterMap[x].w;
 
-            if (m_vv4WaterMap[x].y < 0) {printf("WARN: Sed < 0: %f\n", m_vv4WaterMap[x].y);}
+            if (m_vv4WaterMap[x].y < -0.0001) {printf("WARN: Sed < 0: %f\n", m_vv4WaterMap[x].y);}
 
             for(uint32_t sp = 0; sp < 8; ++sp)
             {

@@ -8,7 +8,7 @@ int main(int argc, char** argv)
 {
     float worldScale = 0.15;
 
-    uint32_t baseRes = 128;
+    uint32_t baseRes = 512;
 
     for(int i = 0; i < 1; ++i)
     {
@@ -61,7 +61,7 @@ int main(int argc, char** argv)
 
 
 
-        terrainEngine.MulLayerScalar(0, 0, 0.33);
+        //terrainEngine.MulLayerScalar(0, 0, 0.33);
 
         // Show view holding locks
         {

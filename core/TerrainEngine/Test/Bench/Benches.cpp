@@ -13,7 +13,7 @@ int main(int argc, char** argv)
         return 255;
     }
 
-    float worldScale = 2.5;
+    float worldScale = 0.15;
     uint32_t baseRes = std::stoull(argv[1]);
     uint32_t iterations = std::stoull(argv[2]);
 
@@ -24,7 +24,7 @@ int main(int argc, char** argv)
         0,
         0,
         worldScale,
-        16,
+        32,
         2
     );
 
