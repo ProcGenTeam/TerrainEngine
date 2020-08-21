@@ -8,7 +8,7 @@ int main(int argc, char** argv)
 {
     float worldScale = 0.15;
 
-    uint32_t baseRes = 256;
+    uint32_t baseRes = 128;
 
     for(int i = 0; i < 1; ++i)
     {
@@ -61,7 +61,7 @@ int main(int argc, char** argv)
 
 
 
-        // terrainEngine.MulLayerScalar(0, 0, 0.33);
+        terrainEngine.MulLayerScalar(0, 0, 0.33);
 
         // Show view holding locks
         {
@@ -70,7 +70,8 @@ int main(int argc, char** argv)
             std::cout << "Holding " << view.use_count() << " views to the array" << std::endl;
             //std::cout << view->size() << std::endl;
 
-            terrainEngine.Erode(0, 5);
+            //terrainEngine.ErodeByNormals(0, 8);
+            terrainEngine.Erode(0, 2);
 
             // for(uint32_t x = 0; x < 5; ++x)
             // {

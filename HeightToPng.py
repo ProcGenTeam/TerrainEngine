@@ -6,7 +6,7 @@ import numpy
 
 # This is a dumb script
 
-lS = 1024 + 32 * 2
+lS = 128 + 32 * 2
 
 filename = sys.argv[1]
 fileData = []
@@ -18,12 +18,14 @@ fileLength = len(fileData) // 4
 fileData = struct.unpack(str(fileLength)+"f", fileData)
 
 maxVal = max(fileData)
+minVal = min(fileData)
 
 print(maxVal)
+print(minVal)
 
 fileData = numpy.array(fileData, dtype=numpy.float).reshape(lS,lS) 
 
-print(fileData[9][234])#9 * 4096 + 1234
+#print(fileData[9][100])#9 * 4096 + 1234
 
 fileData = fileData * 65535#255#// (maxVal // 256)
 

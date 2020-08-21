@@ -44,6 +44,7 @@ glm::vec3 GetGradients(
         // 
 
     }
+    return glm::vec3();
 }
 
 glm::vec3 GetNormal(

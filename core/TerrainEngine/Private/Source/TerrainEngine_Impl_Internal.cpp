@@ -111,7 +111,7 @@ CHydraulicErosion* CTerrainEngine_Impl::Internal_GetBestEroder(uint32_t uFilterS
             return new CHydraulicErosion(uFilterSize, uSeed, iOffsetX, iOffsetY, fWaterLevel);
         }
     #else
-        return new CHydraulicErosion(uFilterSize, uSeed, fWaterLevel);
+        return new CHydraulicErosion(uFilterSize, uSeed, iOffsetX, iOffsetY, fWaterLevel);
     #endif
 }
 
