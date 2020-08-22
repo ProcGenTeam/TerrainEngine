@@ -30,5 +30,5 @@ print(mVal, miVal)
 print(data.shape)
 
 img = Image.fromarray(data, 'RGB')
-img.show()
+#img.show()
 img.save("trashmouse.png")

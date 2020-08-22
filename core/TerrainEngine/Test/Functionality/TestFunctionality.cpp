@@ -54,7 +54,9 @@ int main(int argc, char** argv)
         terrainEngine.MulLayers(1, 1, 2);
         terrainEngine.AddLayers(0, 0, 1);
 
-        //terrainEngine.MulLayerScalar(0,0,0);
+        terrainEngine.MulLayerScalar(0,0,1.5);
+
+        // // terrainEngine.MulLayerScalar(0,0,0);
         terrainEngine.Perlin(1, 120);
         terrainEngine.MulLayerScalar(1, 1, 0.0005);
         terrainEngine.AddLayers(0,0,1);
@@ -71,7 +73,7 @@ int main(int argc, char** argv)
             //std::cout << view->size() << std::endl;
 
             //terrainEngine.ErodeByNormals(0, 8);
-            terrainEngine.Erode(0, 2);
+            terrainEngine.Erode(0, 1);
 
             // for(uint32_t x = 0; x < 5; ++x)
             // {
@@ -107,7 +109,7 @@ int main(int argc, char** argv)
             st.fCameraDistance = 0.1f;
             st.fStepDistance = 0.1f;
             st.uWorldScaleUnits = 1024;
-            st.fWorldHeightRenderScale = 100.f / worldScale;
+            st.fWorldHeightRenderScale = 100.f / worldScale * 0.6;
             st.fFarClip = 10000.f;
             st.fNearClip = 0.01f;
             auto view = terrainEngine.GetView(0);
