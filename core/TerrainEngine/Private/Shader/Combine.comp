@@ -7,6 +7,11 @@ struct InfoBuffer
 {
     uint uWidth;
     uint uHeight;
+    float fEvaporationRate;
+    float fDepositionRate;
+    float fSoilSoftness;
+    float fRainCoeff;
+    float fSedimentCapacity;
 };
 
 struct FHydFloatCombiner
@@ -14,47 +19,47 @@ struct FHydFloatCombiner
     float values[8];
 };
 
-layout(std140, binding = 0) buffer hbuf
+layout(std430, binding = 0) buffer hbuf
 {
     float heightMap[];
 };
 
-// layout(std140, binding = 1) buffer buf
+// layout(std430, binding = 1) buffer buf
 // {
 //     float outMap[];
 // }
 
-layout(std140, binding = 1) buffer wbuf
+layout(std430, binding = 1) buffer wbuf
 {
     FHydFloatCombiner waterMap[];
 };
 
-layout(std140, binding = 2) buffer sbuf
+layout(std430, binding = 2) buffer sbuf
 {
     FHydFloatCombiner sedimentMap[];
 };
 
-layout(std140, binding = 3) buffer waterlv
+layout(std430, binding = 3) buffer waterlv
 {
    float waterLevel[];
 };
 
-layout(std140, binding = 4) buffer sedlv
+layout(std430, binding = 4) buffer sedlv
 {
    float sedimentLevel[];
 };
 
-layout(std140, binding = 5) buffer delaywaterlv
+layout(std430, binding = 5) buffer delaywaterlv
 {
    float delayedWaterLevel[];
 };
 
-layout(std140, binding = 6) buffer delaysedlv
+layout(std430, binding = 6) buffer delaysedlv
 {
    float delayedSedimentLevel[];
 };
 
-layout(std140, binding = 7) buffer info
+layout(std430, binding = 7) buffer info
 {
    InfoBuffer shaderInfo;
 };
@@ -71,6 +76,180 @@ void main()
     }
 
     uint gIdx = gl_GlobalInvocationID.y * shaderInfo.uWidth + gl_GlobalInvocationID.x;
+    //uint gIdx = gl_GlobalInvocationID.x;
 
-    // 
+    uint y = gl_GlobalInvocationID.y;
+    uint x = gl_GlobalInvocationID.x;
+    int index = 0;
+    int yMod = 0;
+    int xMod = 0;
+    int yReal = 0;
+    int xReal = 0;
+
+    //heightMap[gIdx] = delayedWaterLevel[gIdx] < 0 ? 0 : 0.2;//1 - heightMap[gIdx];
+
+    waterLevel[gIdx] -= delayedWaterLevel[gIdx];
+    sedimentLevel[gIdx] -= delayedSedimentLevel[gIdx];
+
+    for(int sp = 0; sp < 8; ++sp)
+    {
+        waterLevel[gIdx].x += waterMap[gIdx].values[sp];
+        
+        // Also add the water we gain
+        delayedWaterLevel[gIdx] -= waterMap[gIdx].values[sp];
+
+        // Sediment
+        // Total Sediment Moved is water * fillLevel
+        sedimentLevel[gIdx] += sedimentMap[gIdx].values[sp];
+
+        waterMap[gIdx].values[sp] = 0;
+        sedimentMap[gIdx].values[sp] = 0;
+    }
+
+    // Deposit!
+    heightMap[gIdx] += shaderInfo.fDepositionRate * sedimentLevel[gIdx];
+    sedimentLevel[gIdx] -= shaderInfo.fDepositionRate * sedimentLevel[gIdx];
+
+    // Evaporation!
+    float evaporationLevel = shaderInfo.fEvaporationRate * waterLevel[gIdx];
+    waterLevel[gIdx] -= evaporationLevel;
+
+    if(waterLevel[gIdx] < 0.00000625f) { waterLevel[gIdx] = 0; }
+    waterLevel[gIdx] = max(waterLevel[gIdx], 0.f);
+    sedimentLevel[gIdx] = max(sedimentLevel[gIdx], 0.f);
+
+
+    float sedCapacity = shaderInfo.fSedimentCapacity * waterLevel[gIdx];
+    if(sedimentLevel[gIdx] >= sedCapacity)
+    {
+        // Deposit everything that is over cap
+        float ssedCapacity = shaderInfo.fDepositionRate * (sedimentLevel[gIdx] - sedCapacity);
+        heightMap[gIdx] += ssedCapacity;
+        sedimentLevel[gIdx] -= ssedCapacity;
+    }
+    // If we aren't over the limit, are we under it?
+    else if(abs(delayedWaterLevel[gIdx]) >= 0.000000125f)
+    {
+        // Pick up the sediment
+        //float rngMod = 1 - 0.1 * (double(uint64_t(6364136223846793005 * GetWorldXYS(x, uWidth, s) + 1442695040888963407)) / double(UINT64_MAX));
+
+        //printf("%f\n", rngMod);
+
+        float ssedCapacity = shaderInfo.fSoilSoftness * (1.f - pow(heightMap[gIdx],2)) * (sedCapacity - sedimentLevel[gIdx]);// * rngMod;
+        //deltaS = std::max(0.001f, sedCapacity);
+        sedimentLevel[gIdx] += ssedCapacity;
+        heightMap[gIdx] -= ssedCapacity;
+    }
+
+    // Reset the delayed amount
+    delayedWaterLevel[gIdx] = 0;
+    delayedSedimentLevel[gIdx] = 0;
 }
+
+
+
+/**
+auto stack = m_vstWaterCombiner[x].values;
+auto sedStack = m_vstSedimentCombiner[x].values;
+
+// Handle delayed subtraction of water level and sediment
+// .z is Cs
+// StV is stuff leaving AKA Sediment Lost
+//auto sedimentLost = m_vv4WaterMap[x].z * (m_vv4WaterMap[x].y / m_vv4WaterMap[x].x);
+m_vv4WaterMap[x].x -= m_vv4WaterMap[x].z / m_fWorldVerticalScale;
+m_vv4WaterMap[x].y -= m_vv4WaterMap[x].w;
+
+if (m_vv4WaterMap[x].y < -0.0001) {printf("WARN: Sed < 0: %f\n", m_vv4WaterMap[x].y);}
+
+for(uint32_t sp = 0; sp < 8; ++sp)
+{
+    m_vv4WaterMap[x].x += stack[sp] / m_fWorldVerticalScale;
+    
+    // Also add the water we gain
+    m_vv4WaterMap[x].z -= stack[sp];
+
+    // Sediment
+    // Total Sediment Moved is water * fillLevel
+    auto sedimentAmount = sedStack[sp];
+    m_vv4WaterMap[x].y += sedimentAmount;
+
+    stack[sp] = 0;
+    sedStack[sp] = 0;
+}
+
+// {printf("TEST: WaterMovement %f\n",fabs(m_vv4WaterMap[x].z));}
+// if (fabs(m_vv4WaterMap[x].z) > 0) {printf("WARN: WaterMovement %f\n",m_vv4WaterMap[x].z);}
+// // Floating Sediment 
+// If waterMoving is == 0
+//if(abs(m_vv4WaterMap[x].z) < FLT_EPSILON)
+if(true)
+{
+    // Deposit
+    pHeight[x] += m_fDeposition * m_vv4WaterMap[x].y;
+    m_vv4WaterMap[x].y -= m_fDeposition * m_vv4WaterMap[x].y;
+}
+
+
+
+// We're done with Combining
+
+// Water Loss due to evaporation is given by
+// -K*W
+// Can be written as w1 = w0 * (1-K)
+auto evaporationLevel = m_fEvaporation * m_vv4WaterMap[x].x;
+m_vv4WaterMap[x].x -= evaporationLevel;
+
+if(m_vv4WaterMap[x].x < 0.00000625f) { m_vv4WaterMap[x].x = 0; }
+m_vv4WaterMap[x].x = std::max(m_vv4WaterMap[x].x, 0.f);
+m_vv4WaterMap[x].y = std::max(m_vv4WaterMap[x].y, 0.f);
+
+// // More Sediment
+// auto sedCapacity = m_fSedimentCapacity * m_vv4WaterMap[x].x;
+// //if (x == 0) {printf("%f\n", sedCapacity);}
+// if(m_vv4WaterMap[x].y >= sedCapacity)
+// {
+//     // Deposit everything that is over cap
+//     auto deltaS = m_fDeposition * (m_vv4WaterMap[x].y - sedCapacity);
+//     pHeight[x] += deltaS;
+//     m_vv4WaterMap[x].y -= deltaS;
+// }
+// else if(m_vv4WaterMap[x].z >= FLT_EPSILON)
+// {
+//     // Pick up the sediment
+//     float rngMod = 1;// - 0.1 * (double(uint64_t(6364136223846793005 * GetWorldXY(x, uWidth) + 1442695040888963407)) / double(UINT64_MAX));
+
+//     //printf("%f\n", rngMod);
+
+//     auto deltaS = m_fSoilSoftness * (sedCapacity - m_vv4WaterMap[x].y) * rngMod;
+//     m_vv4WaterMap[x].y += deltaS;
+//     pHeight[x] -= deltaS;
+// }
+
+// Handle evaporation alone
+
+auto sedCapacity = m_fSedimentCapacity * m_vv4WaterMap[x].x;
+if(m_vv4WaterMap[x].y >= sedCapacity)
+{
+    // Deposit everything that is over cap
+    auto deltaS = m_fDeposition * (m_vv4WaterMap[x].y - sedCapacity);
+    pHeight[x] += deltaS;
+    m_vv4WaterMap[x].y -= deltaS;
+}
+// If we aren't over the limit, are we under it?
+else if(fabs(m_vv4WaterMap[x].z) >= FLT_EPSILON)
+{
+    // Pick up the sediment
+    //float rngMod = 1 - 0.1 * (double(uint64_t(6364136223846793005 * GetWorldXYS(x, uWidth, s) + 1442695040888963407)) / double(UINT64_MAX));
+
+    //printf("%f\n", rngMod);
+
+    auto deltaS = m_fSoilSoftness * (1-std::pow(pHeight[x],2)) * (sedCapacity - m_vv4WaterMap[x].y);// * rngMod;
+    //deltaS = std::max(0.001f, sedCapacity);
+    m_vv4WaterMap[x].y += deltaS;
+    pHeight[x] -= deltaS;
+}
+
+// Reset the delayed amount
+m_vv4WaterMap[x].z = 0;
+m_vv4WaterMap[x].w = 0;
+ */

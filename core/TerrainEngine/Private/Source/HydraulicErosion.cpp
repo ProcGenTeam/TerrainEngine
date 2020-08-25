@@ -231,6 +231,7 @@ void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
     uint32_t uStop = 500;
 #else
     uint32_t uSteps = 1024;
+    uint32_t uStop = 50;
 #endif
     //uSteps = 3000;
     //float fStep = 1.f / uSteps;

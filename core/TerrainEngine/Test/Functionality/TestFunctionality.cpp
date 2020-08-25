@@ -6,9 +6,9 @@
 
 int main(int argc, char** argv)
 {
-    float worldScale = 0.15;
+    float worldScale = 0.35;
 
-    uint32_t baseRes = 4096;
+    uint32_t baseRes = 512;
 
     for(int i = 0; i < 1; ++i)
     {
@@ -59,7 +59,7 @@ int main(int argc, char** argv)
         // // terrainEngine.MulLayerScalar(0,0,0);
         terrainEngine.Perlin(1, 120);
         terrainEngine.MulLayerScalar(1, 1, 0.0005);
-        //terrainEngine.AddLayers(0,0,1);
+        terrainEngine.AddLayers(0,0,1);
 
 
 

@@ -7,6 +7,10 @@ struct InfoBuffer
 {
     uint uWidth;
     uint uHeight;
+    float fEvaporationRate;
+    float fDepositionRate;
+    float fSoftness;
+    float fRainCoeff;
 };
 
 struct FHydFloatCombiner
@@ -14,42 +18,42 @@ struct FHydFloatCombiner
     float values[8];
 };
 
-layout(std140, binding = 0) buffer hbuf
+layout(std430, binding = 0) buffer hbuf
 {
     float heightMap[];
 };
 
-layout(std140, binding = 1) buffer wbuf
+layout(std430, binding = 1) buffer wbuf
 {
     FHydFloatCombiner waterMap[];
 };
 
-layout(std140, binding = 2) buffer sbuf
+layout(std430, binding = 2) buffer sbuf
 {
     FHydFloatCombiner sedimentMap[];
 };
 
-layout(std140, binding = 3) buffer waterlv
+layout(std430, binding = 3) buffer waterlv
 {
    float waterLevel[];
 };
 
-layout(std140, binding = 4) buffer sedlv
+layout(std430, binding = 4) buffer sedlv
 {
    float sedimentLevel[];
 };
 
-layout(std140, binding = 5) buffer delaywaterlv
+layout(std430, binding = 5) buffer delaywaterlv
 {
    float delayedWaterLevel[];
 };
 
-layout(std140, binding = 6) buffer delaysedlv
+layout(std430, binding = 6) buffer delaysedlv
 {
    float delayedSedimentLevel[];
 };
 
-layout(std140, binding = 7) buffer info
+layout(std430, binding = 7) buffer info
 {
    InfoBuffer shaderInfo;
 };

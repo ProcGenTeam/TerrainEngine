@@ -2,11 +2,37 @@
 #ifdef TE_USE_GPU
 #include "HydraulicErosion.h"
 #include <vulkan/vulkan.h>
+#include <filesystem>
 
 struct FDeviceBackedBuffer
 {
     VkBuffer vkBuffer;
     VkDeviceMemory vkDeviceMemory;
+    VkDeviceSize uSize;
+};
+
+struct FPipeline
+{
+    VkPipeline vkPipeline;
+    VkPipelineLayout vkPipelineLayout;
+};
+
+struct FShaderInfo
+{
+    uint uWidth;
+    uint uHeight;
+    float fEvaporationRate;
+    float fDepositionRate;
+    float fSoilSoftness;
+    float fRainCoeff;
+    float fSedimentCapacity;
+    //float fWaterLevel;
+};
+
+struct FShaderBytecode
+{
+    std::vector<uint32_t> vBytecode;
+    VkShaderModule vkShaderModule;
 };
 
 class CGPUHydraulicErosion : public CHydraulicErosion
@@ -33,16 +59,17 @@ class CGPUHydraulicErosion : public CHydraulicErosion
         The pipeline specifies the pipeline that all graphics and compute commands pass though in Vulkan.
         We will be creating a simple compute pipeline in this application. 
         */
-        VkPipeline pipeline;
-        VkPipelineLayout pipelineLayout;
-        VkShaderModule computeShaderModule;
+        //VkPipeline m_vkPipeline;
+        //VkPipelineLayout m_vkPipelineLayout;
+        std::vector<FPipeline> m_vPipelines;
+        //VkShaderModule computeShaderModule;
 
         /*
         The command buffer is used to record commands, that will be submitted to a queue.
         To allocate such command buffers, we use a command pool.
         */
-        VkCommandPool commandPool;
-        VkCommandBuffer commandBuffer;
+        VkCommandPool m_vkCommandPool;
+        VkCommandBuffer m_vkCommandBuffer;
 
         /*
         Descriptors represent resources in shaders. They allow us to use things like
@@ -50,9 +77,9 @@ class CGPUHydraulicErosion : public CHydraulicErosion
         A single descriptor represents a single resource, and several descriptors are organized
         into descriptor sets, which are basically just collections of descriptors.
         */
-        VkDescriptorPool descriptorPool;
-        VkDescriptorSet descriptorSet;
-        VkDescriptorSetLayout descriptorSetLayout;
+        VkDescriptorPool m_vkDescriptorPool;
+        VkDescriptorSet m_vkDescriptorSet;
+        VkDescriptorSetLayout m_vkDescriptorSetLayout;
 
         /*
             Buffers
@@ -85,7 +112,7 @@ class CGPUHydraulicErosion : public CHydraulicErosion
         graphics operations, for instance. For this application, we at least want a queue
         that supports compute operations. 
         */
-        VkQueue queue; // a queue supporting compute operations.
+        VkQueue m_vkQueue; // a queue supporting compute operations.
 
         /*
         Groups of queues that have the same capabilities(for instance, they all supports graphics and computer operations),
@@ -96,17 +123,24 @@ class CGPUHydraulicErosion : public CHydraulicErosion
         */
         uint32_t queueFamilyIndex;
 
+        std::vector<FShaderBytecode> m_vShaders;
+
     private:
         void CreateVKInstance();
         void CreateDevice();
         void CreatePhysicalDevice();
         void CreateBuffer(FDeviceBackedBuffer &stBuffer, uint64_t uSize);
+        void CreateShaderModules(std::filesystem::path shaderPath);
         void CreateDescSetLayout();
         void CreateDescSet();
         void CreateComputePipe();
         void CreateCommandBuffer();
 
         void DeleteBuffer(FDeviceBackedBuffer &stBuffer);
+
+        void VkMemcpy(FDeviceBackedBuffer &stBuffer, void *cpuBuffer, uint64_t uSize);
+        void VkMemcpy(void *cpuBuffer, FDeviceBackedBuffer &stBuffer, uint64_t uSize);
+        void VkZeroMemory(FDeviceBackedBuffer &stBuffer);
 
     public:
         CGPUHydraulicErosion(int32_t iOverscan, uint32_t uSeed, int32_t iOffsetX, int32_t iOffsetY, FLOAT_TYPE fWaterLevel = 0.1f);
