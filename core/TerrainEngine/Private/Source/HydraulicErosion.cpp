@@ -13,6 +13,7 @@
 #define GetWorldX(x) ((x) + m_iOffsetX)
 #define GetWorldY(y) ((y) + m_iOffsetY)
 #define GetWorldXY(x, width) ( (x) + (m_iOffsetY * (width) + m_iOffsetX) )
+#define GetWorldXYS(x, width, step) ( ((x) + (m_iOffsetY * (width) + m_iOffsetX)) * (step) )
 
 CHydraulicErosion::CHydraulicErosion
 (
@@ -28,10 +29,11 @@ CHydraulicErosion::CHydraulicErosion
     m_mtRandGen(std::mt19937_64(uSeed)),
     m_distNormal(std::normal_distribution<float>(1.0, 0.1)),
     m_fWaterLevel(fWaterLevel),
-    m_fDeposition(0.01f),
-    m_fEvaporation(0.002f),
-    m_fSedimentCapacity(2.f),
-    m_fSoilSoftness(0.05f),
+    m_fEvaporation(0.01f),
+    m_fSedimentCapacity(1.f),
+    //m_fDeposition(0.025f),
+    m_fSoilSoftness(0.3f),
+    m_fDeposition(0.3f / 6),
     m_fWorldVerticalScale(4000)
 {
     
@@ -226,11 +228,12 @@ void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
     // Create Array. Let's use a *very* small step size to get some good performance
 #ifdef NDEBUG
     uint32_t uSteps = 65536;
+    uint32_t uStop = 500;
 #else
     uint32_t uSteps = 1024;
 #endif
-    uSteps = 5000;
-    float fStep = 1.f / uSteps;
+    //uSteps = 3000;
+    //float fStep = 1.f / uSteps;
 
     // Resize Arrays
     m_vv4WaterMap.resize(uHeight * uWidth);
@@ -250,8 +253,9 @@ void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
     #endif
     for (uint32_t i = 0; i < m_vv4WaterMap.size(); ++i)
     {
-        float rngMod = 1 + 0.001 * (double(uint64_t(6364136223846793005 * GetWorldXY(i, uWidth) + 1442695040888963407)) / double(UINT64_MAX));
+        float rngMod = 1 + 0.51 * (double(uint64_t(6364136223846793005 * GetWorldXY(i, uWidth) + 1442695040888963407)) / double(UINT64_MAX));
         m_vv4WaterMap[i].x = 0.000125f * 0.5f + (pHeight[i] * rngMod * 0.000125f);
+        m_vv4WaterMap[i].x = (std::pow(pHeight[i], 8) * rngMod * 0.0425f);
         m_vv4WaterMap[i].y = 0.f;
 
         //printf("Check Water Level at %d is %f vs %f\n", i,  pHeight[i], m_fWaterLevel);
@@ -266,6 +270,7 @@ void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
     //printf("Finished Creating Water\n");
     bool bNoWater = false;
     float fTotalWaterRemaining = 0;
+    uint32_t uTimesRained = 0;
     // Process Each Step
     for(uint32_t s = 0; s < uSteps; ++s)
     {
@@ -280,6 +285,18 @@ void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
         if(fStepWaterRemaining < (uWidth * uHeight * 0.00001))
         {
             bNoWater = true;
+            if (s > uStop) {
+                //Sediment Equaliser Step
+                #ifdef NDEBUG
+                #pragma omp parallel for
+                #endif
+                for(uint32_t x = 0; x < m_vv4WaterMap.size(); ++x)
+                {
+                    // Drop Sediment in place
+                    pOut[x] = pHeight[x] + m_vv4WaterMap[x].y;
+                }
+                return;
+            }
         }
 
         // if (fStepWaterRemaining > fTotalWaterRemaining)
@@ -287,14 +304,14 @@ void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
         //     bRainIsExploding = true;
         // }
         // fTotalWaterRemaining = fStepWaterRemaining;
-        // //if(s % 499 == 0){printf("Pre Rain Water: %f\n",fTotalWaterRemaining);}
+        if(s % 10 == 0){printf("Pre Rain Water: %f\n",fStepWaterRemaining);}
         // if (bRainIsExploding)
         // {
         //     printf("Too much water caught! Holding off\n");
         // }
 
 
-        if(bNoWater && s != 0 && s % 2 == 0 && s < (uSteps * 0.9))
+        if((bNoWater && (s != 0 && s % 100 == 0)) && s < uStop)
         {
 
             #ifdef NDEBUG
@@ -302,8 +319,11 @@ void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
             #endif
             for (uint32_t i = 0; i < m_vv4WaterMap.size(); ++i)
             {
-                m_vv4WaterMap[i].x += (m_fEvaporation * 0.1);// 0.000025);
+                m_vv4WaterMap[i].x += (std::pow(pHeight[i], 1 + (uTimesRained % 4)) * m_fEvaporation * 0.05);// 0.000025);
                 //m_vv4WaterMap[i].x += (m_fEvaporation * rngMod);// 0.000025);
+                float rngMod = 1 + 0.05 * (double(uint64_t(6364136223846793005 * GetWorldXYS(i, uWidth, s+1) + 1442695040888963407)) / double(UINT64_MAX));
+        
+                m_vv4WaterMap[i].x += (std::pow(pHeight[i], 5 - (uTimesRained % 4)) * rngMod * 0.0125f);
                 
                 //m_vv4
                 if(pHeight[i] < m_fWaterLevel)
@@ -312,8 +332,9 @@ void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
                     m_vv4WaterMap[i].x = m_fWaterLevel - pHeight[i];
                 }
             }
-            printf("Finished Adding Water\n");
+            printf("Finished Adding Water %d\n", uTimesRained);
             bNoWater = false;
+            ++uTimesRained;
         }
 
         // Calculation Step 
@@ -325,6 +346,9 @@ void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
         // }
 
         // omp_set_num_threads(nThreads * 2);
+
+        memset(m_vstWaterCombiner.data(), 0, m_vstWaterCombiner.size() * sizeof(FHydFloatCombiner));
+        memset(m_vstSedimentCombiner.data(), 0, m_vstSedimentCombiner.size() * sizeof(FHydFloatCombiner));
 
         #ifdef NDEBUG
         #pragma omp parallel for
@@ -401,9 +425,9 @@ void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
 
                     // Changed nNeighbours to heightDelta
 
-                    auto ratio = (stLowerNeighbours.values[n] / sumHeightDifferent);
+                    auto ratio = (stLowerNeighbours.values[n] / sumHeightDifferent) / (nLowerNeighbours + 1);
                     auto waterToMoveHere = deltaW * ratio;
-                    auto sedToMoveHere = sedimentHere * ratio * 0.75f;
+                    auto sedToMoveHere = sedimentHere * ratio;// * 0.85f;
 
                     // Sediment To Move is function of the sediment in the water
 
@@ -460,7 +484,8 @@ void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
             // if (fabs(m_vv4WaterMap[x].z) > 0) {printf("WARN: WaterMovement %f\n",m_vv4WaterMap[x].z);}
             // // Floating Sediment 
             // If waterMoving is == 0
-            if(abs(m_vv4WaterMap[x].z) < FLT_EPSILON)
+            //if(abs(m_vv4WaterMap[x].z) < FLT_EPSILON)
+            if(true)
             {
                 // Deposit
                 pHeight[x] += m_fDeposition * m_vv4WaterMap[x].y;
@@ -503,29 +528,28 @@ void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
             //     pHeight[x] -= deltaS;
             // }
 
-            if(fabs(m_vv4WaterMap[x].z) >= FLT_EPSILON)
+            // Handle evaporation alone
+
+            auto sedCapacity = m_fSedimentCapacity * m_vv4WaterMap[x].x;
+            if(m_vv4WaterMap[x].y >= sedCapacity)
             {
-                // More Sediment
-                auto sedCapacity = m_fSedimentCapacity * m_vv4WaterMap[x].x;
-                //{printf("%f\n", sedCapacity);}
-                if(m_vv4WaterMap[x].y >= sedCapacity)
-                {
-                    // Deposit everything that is over cap
-                    auto deltaS = m_fDeposition * (m_vv4WaterMap[x].y - sedCapacity);
-                    pHeight[x] += deltaS;
-                    m_vv4WaterMap[x].y -= deltaS;
-                }
-                else
-                {
-                    // Pick up the sediment
-                    float rngMod = 1;// - 0.1 * (double(uint64_t(6364136223846793005 * GetWorldXY(x, uWidth) + 1442695040888963407)) / double(UINT64_MAX));
+                // Deposit everything that is over cap
+                auto deltaS = m_fDeposition * (m_vv4WaterMap[x].y - sedCapacity);
+                pHeight[x] += deltaS;
+                m_vv4WaterMap[x].y -= deltaS;
+            }
+            // If we aren't over the limit, are we under it?
+            else if(fabs(m_vv4WaterMap[x].z) >= FLT_EPSILON)
+            {
+                // Pick up the sediment
+                //float rngMod = 1 - 0.1 * (double(uint64_t(6364136223846793005 * GetWorldXYS(x, uWidth, s) + 1442695040888963407)) / double(UINT64_MAX));
 
-                    //printf("%f\n", rngMod);
+                //printf("%f\n", rngMod);
 
-                    auto deltaS = m_fSoilSoftness * (sedCapacity - m_vv4WaterMap[x].y) * rngMod;
-                    m_vv4WaterMap[x].y += deltaS;
-                    pHeight[x] -= deltaS;
-                }
+                auto deltaS = m_fSoilSoftness * (1-std::pow(pHeight[x],2)) * (sedCapacity - m_vv4WaterMap[x].y);// * rngMod;
+                //deltaS = std::max(0.001f, sedCapacity);
+                m_vv4WaterMap[x].y += deltaS;
+                pHeight[x] -= deltaS;
             }
 
             // Reset the delayed amount

@@ -54,9 +54,8 @@ layout(std140, binding = 7) buffer info
    InfoBuffer shaderInfo;
 };
 
-
 /**
- * First Pass
+ * Last Pass
  */
 void main()
 {
@@ -67,5 +66,5 @@ void main()
 
     uint gIdx = gl_GlobalInvocationID.y * shaderInfo.uWidth + gl_GlobalInvocationID.x;
 
-    // 
+    heightMap[gIdx] = heightMap[gIdx] + sedimentLevel[gIdx];
 }

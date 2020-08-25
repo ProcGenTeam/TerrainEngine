@@ -19,6 +19,11 @@ layout(std140, binding = 0) buffer hbuf
     float heightMap[];
 };
 
+// layout(std140, binding = 1) buffer buf
+// {
+//     float outMap[];
+// }
+
 layout(std140, binding = 1) buffer wbuf
 {
     FHydFloatCombiner waterMap[];
@@ -56,7 +61,7 @@ layout(std140, binding = 7) buffer info
 
 
 /**
- * First Pass
+ * Second Pass
  */
 void main()
 {

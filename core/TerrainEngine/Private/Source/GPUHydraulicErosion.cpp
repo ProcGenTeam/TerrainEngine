@@ -430,25 +430,38 @@ void CGPUHydraulicErosion::Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
     FDeviceBackedBuffer waterMap{};
     FDeviceBackedBuffer sedimentMap{};
     FDeviceBackedBuffer heightMap{};
-    FDeviceBackedBuffer accumulationMap{};
-    FDeviceBackedBuffer outMap{};
+    FDeviceBackedBuffer waterLevel{};
+    FDeviceBackedBuffer sedimentLevel{};
+    FDeviceBackedBuffer delayedWaterLevel{};
+    FDeviceBackedBuffer delayedSedimentLevel{};
+//    FDeviceBackedBuffer accumulationMap{};
+    //FDeviceBackedBuffer outMap{};
     
     CreateBuffer(heightMap, uWidth * uHeight * sizeof(FLOAT_TYPE));
-    CreateBuffer(outMap, uWidth * uHeight * sizeof(FLOAT_TYPE));
+    //CreateBuffer(outMap, uWidth * uHeight * sizeof(FLOAT_TYPE));
     CreateBuffer(sedimentMap, uWidth * uHeight * sizeof(FLOAT_TYPE) * 8);
     CreateBuffer(waterMap, uWidth * uHeight * sizeof(FLOAT_TYPE) * 8);
-    CreateBuffer(accumulationMap, uWidth * uHeight * sizeof(glm::vec4));
+    //CreateBuffer(waterMap, uWidth * uHeight * sizeof(glm::vec4));
+    CreateBuffer(waterLevel, uWidth * uHeight);
+    CreateBuffer(sedimentLevel, uWidth * uHeight);
+    CreateBuffer(delayedWaterLevel, uWidth * uHeight);
+    CreateBuffer(delayedSedimentLevel, uWidth * uHeight);
 
     // Create Shader
+    printf("Got to Erode :)\n");
     
 
     // Process :)
 
-    DeleteBuffer(accumulationMap);
+    //DeleteBuffer(accumulationMap);
     DeleteBuffer(waterMap);
     DeleteBuffer(sedimentMap);
-    DeleteBuffer(outMap);
+    //DeleteBuffer(outMap);
     DeleteBuffer(heightMap);
+    DeleteBuffer(waterLevel);
+    DeleteBuffer(sedimentLevel);
+    DeleteBuffer(delayedWaterLevel);
+    DeleteBuffer(delayedSedimentLevel);
 
     CHydraulicErosion::Erode(pHeight, pOut, uHeight, uWidth, fScale);
 

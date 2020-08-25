@@ -8,7 +8,7 @@ int main(int argc, char** argv)
 {
     float worldScale = 0.15;
 
-    uint32_t baseRes = 512;
+    uint32_t baseRes = 4096;
 
     for(int i = 0; i < 1; ++i)
     {
@@ -59,7 +59,7 @@ int main(int argc, char** argv)
         // // terrainEngine.MulLayerScalar(0,0,0);
         terrainEngine.Perlin(1, 120);
         terrainEngine.MulLayerScalar(1, 1, 0.0005);
-        terrainEngine.AddLayers(0,0,1);
+        //terrainEngine.AddLayers(0,0,1);
 
 
 
@@ -99,6 +99,9 @@ int main(int argc, char** argv)
 
             std::ofstream of(std::to_string(x) + "," + std::to_string(y) + ".hgt", std::ios::binary);
             auto lPtr = *view.get();
+            uint32_t lSize = baseRes + 64;
+            of.write(reinterpret_cast<char*>(&lSize), sizeof(uint32_t));
+            of.write(reinterpret_cast<char*>(&lSize), sizeof(uint32_t));
             of.write(reinterpret_cast<char*>(&lPtr[0]), view->size() * sizeof(lPtr[0]));
         }
 
@@ -109,7 +112,7 @@ int main(int argc, char** argv)
             st.fCameraDistance = 0.1f;
             st.fStepDistance = 0.1f;
             st.uWorldScaleUnits = 1024;
-            st.fWorldHeightRenderScale = 100.f / worldScale * 0.6;
+            st.fWorldHeightRenderScale = 100.f / worldScale * 0.8;
             st.fFarClip = 10000.f;
             st.fNearClip = 0.01f;
             auto view = terrainEngine.GetView(0);
