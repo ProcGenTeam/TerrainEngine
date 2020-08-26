@@ -44,6 +44,7 @@ glm::vec3 GetGradients(
         // 
 
     }
+    return glm::vec3();
 }
 
 glm::vec3 GetNormal(
@@ -80,7 +81,7 @@ glm::vec4 CRenderEngine_Impl::MarchRay_FixedStep
     uint32_t uTerrainWidth
 )
 {
-    glm::vec3 v3LightLocation(m_stSettings.uWorldScaleUnits / 2, 210, m_stSettings.uWorldScaleUnits / 2);
+    glm::vec3 v3LightLocation(m_stSettings.uWorldScaleUnits / 2, 380, m_stSettings.uWorldScaleUnits / 2);
     float fImpactLocation = m_stSettings.fFarClip;
     auto rayPos = v3RayOrigin;
 

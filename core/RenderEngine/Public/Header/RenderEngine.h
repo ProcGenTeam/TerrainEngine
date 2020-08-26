@@ -4,6 +4,7 @@
 #include <vector>
 #include "core/RenderEngine/Public/Header/Common.h"
 #include "core/Common/Public/Header/Types.h"
+#include <string>
 
 class CRenderEngine
 {

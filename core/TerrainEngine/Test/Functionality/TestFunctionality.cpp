@@ -6,9 +6,9 @@
 
 int main(int argc, char** argv)
 {
-    float worldScale = 0.5;
+    float worldScale = 0.15;
 
-    uint32_t baseRes = 2048;
+    uint32_t baseRes = 512;
 
     for(int i = 0; i < 1; ++i)
     {
@@ -24,7 +24,7 @@ int main(int argc, char** argv)
             baseRes * x,
             baseRes * y,
             worldScale,
-            16,
+            32,
             2
         );
 
@@ -54,14 +54,16 @@ int main(int argc, char** argv)
         terrainEngine.MulLayers(1, 1, 2);
         terrainEngine.AddLayers(0, 0, 1);
 
-        //terrainEngine.MulLayerScalar(0,0,0);
+        terrainEngine.MulLayerScalar(0,0,1.5);
+
+        // // terrainEngine.MulLayerScalar(0,0,0);
         terrainEngine.Perlin(1, 120);
         terrainEngine.MulLayerScalar(1, 1, 0.0005);
         terrainEngine.AddLayers(0,0,1);
 
 
 
-        // terrainEngine.MulLayerScalar(0, 0, 0.33);
+        //terrainEngine.MulLayerScalar(0, 0, 0.33);
 
         // Show view holding locks
         {
@@ -70,7 +72,8 @@ int main(int argc, char** argv)
             std::cout << "Holding " << view.use_count() << " views to the array" << std::endl;
             //std::cout << view->size() << std::endl;
 
-            terrainEngine.Erode(0, 5);
+            //terrainEngine.ErodeByNormals(0, 8);
+            terrainEngine.Erode(0, 1);
 
             // for(uint32_t x = 0; x < 5; ++x)
             // {
@@ -96,6 +99,9 @@ int main(int argc, char** argv)
 
             std::ofstream of(std::to_string(x) + "," + std::to_string(y) + ".hgt", std::ios::binary);
             auto lPtr = *view.get();
+            uint32_t lSize = baseRes + 64;
+            of.write(reinterpret_cast<char*>(&lSize), sizeof(uint32_t));
+            of.write(reinterpret_cast<char*>(&lSize), sizeof(uint32_t));
             of.write(reinterpret_cast<char*>(&lPtr[0]), view->size() * sizeof(lPtr[0]));
         }
 
@@ -112,7 +118,7 @@ int main(int argc, char** argv)
             auto view = terrainEngine.GetView(0);
 
             auto rend = CRenderEngine(st);
-            rend.MarchedRender("skyHigh_" + std::to_string(x) + "_" + std::to_string(y) + ".rgb", view, baseRes + 32);
+            rend.MarchedRender("skyHigh_" + std::to_string(x) + "_" + std::to_string(y) + ".rgb", view, baseRes + 64);
         }
 
     }

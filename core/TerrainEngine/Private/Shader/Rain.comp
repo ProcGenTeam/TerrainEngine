@@ -1,0 +1,174 @@
+#version 450
+//#extension GL_ARB_seperate_shader_objects : enable
+
+layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+
+struct InfoBuffer
+{
+    uint uWidth;
+    uint uHeight;
+    float fEvaporationRate;
+    float fDepositionRate;
+    float fSoilSoftness;
+    float fRainCoeff;
+    float fSedimentCapacity;
+};
+
+struct FHydFloatCombiner
+{
+    float values[8];
+};
+
+layout(std430, binding = 0) buffer hbuf
+{
+    float heightMap[];
+};
+
+layout(std430, binding = 1) buffer wbuf
+{
+    FHydFloatCombiner waterMap[];
+};
+
+layout(std430, binding = 2) buffer sbuf
+{
+    FHydFloatCombiner sedimentMap[];
+};
+
+layout(std430, binding = 3) buffer waterlv
+{
+   float waterLevel[];
+};
+
+layout(std430, binding = 4) buffer sedlv
+{
+   float sedimentLevel[];
+};
+
+layout(std430, binding = 5) buffer delaywaterlv
+{
+   float delayedWaterLevel[];
+};
+
+layout(std430, binding = 6) buffer delaysedlv
+{
+   float delayedSedimentLevel[];
+};
+
+layout(std430, binding = 7) readonly buffer info
+{
+   InfoBuffer shaderInfo;
+};
+
+
+/**
+ * First Pass
+ */
+void main()
+{
+    if(gl_GlobalInvocationID.x >= shaderInfo.uWidth || gl_GlobalInvocationID.y >= shaderInfo.uHeight)
+    {
+        return;
+    }
+
+    uint gIdx = gl_GlobalInvocationID.y * shaderInfo.uWidth + gl_GlobalInvocationID.x;
+    waterLevel[gIdx] += shaderInfo.fRainCoeff * pow(heightMap[gIdx], 1);
+    //heightMap[gIdx] = waterLevel[gIdx]; //0.225f * pow(heightMap[gIdx], 6);
+    
+}
+
+
+/*
+
+#ifdef NDEBUG
+        #pragma omp parallel for
+        #endif
+        for(uint32_t y = 0; y < uHeight; ++y)
+        {
+            auto my = y * uWidth;
+
+            for(uint32_t x = 0; x < uWidth; ++x)
+            {
+                // What is the most water we can move?
+                auto maximalWaterToMove = m_vv4WaterMap[my+x].x;
+                auto terrainHeight = pHeight[my+x];
+                auto waterLevel = terrainHeight + maximalWaterToMove;
+
+                // Create stack array of valid neighbours
+                FHydFloatCombiner stLowerNeighbours{};
+
+                // Heights
+                float sumHeightDifferent = 0;
+                auto nLowerNeighbours = 0;
+
+                for(uint32_t n = 0; n < 8; ++n)
+                {
+                    auto ln = n;
+                    if(ln > 3) { ++ln; }
+
+                    int32_t yMod = ln / 3 - 1;
+                    int32_t xMod = ln % 3 - 1;
+                    
+                    //printf("%d means y:%d x:%d\n", n, yMod, xMod);
+                    auto yReal = y + yMod;
+                    auto xReal = x + xMod;
+
+                    // Bounds
+                    if (yReal < 0 || yReal >= uHeight || xReal < 0 || xReal >= uWidth)
+                    {
+                        continue;
+                    }
+
+                    
+                    auto checkedWaterLevel = pHeight[yReal * uWidth + xReal] + m_vv4WaterMap[yReal * uWidth + xReal].x;
+                    if (checkedWaterLevel >= waterLevel) { continue; }
+
+                    // We have water to move
+                    sumHeightDifferent += (waterLevel - checkedWaterLevel);
+                    ++nLowerNeighbours;
+                    stLowerNeighbours.values[n] = waterLevel - checkedWaterLevel;
+                }
+
+                // Is there anything to do?
+                //if(nLowerNeighbours == 0) { continue; }
+
+                // Calc DeltaW
+                // Or don't
+                auto deltaW = maximalWaterToMove;//std::min(maximalWaterToMove, sumHeightDifferent / nLowerNeighbours);
+                //auto sedimentSaturation = m_vv4WaterMap[my+x].y / m_vv4WaterMap[my+x].x;
+                auto sedimentHere = m_vv4WaterMap[my+x].y;
+
+                for(uint32_t n = 0; n < 8; ++n)
+                {
+                    // Is Valid Neighbour?
+                    if(stLowerNeighbours.values[n] == 0){ continue; }
+
+                    // Calculate the proportional share of the water
+                    auto ln = n;
+                    if(ln > 3) { ++ln; }
+
+                    int32_t yMod = ln / 3 - 1;
+                    int32_t xMod = ln % 3 - 1;
+                    
+                    auto yReal = y + yMod;
+                    auto xReal = x + xMod;
+
+                    // Changed nNeighbours to heightDelta
+
+                    auto ratio = (stLowerNeighbours.values[n] / sumHeightDifferent) / (nLowerNeighbours + 1);
+                    auto waterToMoveHere = deltaW * ratio;
+                    auto sedToMoveHere = sedimentHere * ratio;// * 0.85f;
+
+                    // Sediment To Move is function of the sediment in the water
+
+
+                    // Change Water Level at this pixel
+                    m_vv4WaterMap[my+x].z += waterToMoveHere * m_fWorldVerticalScale;
+                    m_vv4WaterMap[my+x].w += sedToMoveHere;
+
+                    m_vstWaterCombiner[yReal * uWidth + xReal].values[n] = waterToMoveHere * m_fWorldVerticalScale;
+                    m_vstSedimentCombiner[yReal * uWidth + xReal].values[n] = sedToMoveHere;
+                }
+            }
+        }
+
+*/

@@ -13,7 +13,12 @@ endif()
 
 set(USE_GPU false CACHE BOOL "Enable the GPU")
 if (USE_GPU)
-    add_definitions(-DTE_USE_GPU)
+    find_package(Vulkan)
+    if(VULKAN_FOUND)
+        add_definitions(-DTE_USE_GPU)
+    else(VULKAN_FOUND)
+        message(FATAL_ERROR "GPGPU was requested in the build, but Vulkan is not available. Exiting.")
+    endif(VULKAN_FOUND)
 endif(USE_GPU)
 
 #add_definitions(-DNDEBUG)
@@ -28,6 +33,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/core
     ${CMAKE_SOURCE_DIR}/extern/glm
+    ${Vulkan_INCLUDE_DIRS}
 )
 
 add_executable(TerrainEnginert ${FRONT_END})
@@ -37,6 +43,7 @@ target_link_libraries(TerrainEnginert
     TerrainEngine
     TaskEngine
     ${CMAKE_THREAD_LIBS_INIT}
+    ${Vulkan_LIBRARIES}
 )
 
 ## Add Lib

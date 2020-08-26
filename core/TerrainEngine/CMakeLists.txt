@@ -15,6 +15,15 @@ if (OPENMP_FOUND)
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
+if (USE_GPU)
+    find_package(Vulkan)
+    if(VULKAN_FOUND)
+        add_definitions(-DTE_USE_GPU)
+    else(VULKAN_FOUND)
+        message(FATAL_ERROR "GPGPU was requested in the build, but Vulkan is not available. Exiting.")
+    endif(VULKAN_FOUND)
+endif(USE_GPU)
+
 
 # Files
 set(PrivateHeaders
@@ -53,6 +62,7 @@ link_directories(
 include_directories(
     ${CMAKE_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/extern/glm
+    ${Vulkan_INCLUDE_DIRS}
 )
 
 target_include_directories(TerrainEngine PRIVATE
@@ -63,6 +73,7 @@ target_link_libraries(
     TerrainEngine
     glm
     ${CMAKE_THREAD_LIBS_INIT}
+    ${Vulkan_LIBRARIES}
 )
 
 add_subdirectory(Test)

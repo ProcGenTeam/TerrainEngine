@@ -96,20 +96,22 @@ uint32_t CTerrainEngine_Impl::Internal_IsIndexSafe(uint32_t uLayerIndex)
     return (uLayerIndex < this->m_vpvData.size());
 }
 
-CHydraulicErosion* CTerrainEngine_Impl::Internal_GetBestEroder(uint32_t uFilterSize, uint32_t uSeed, FLOAT_TYPE fWaterLevel)
+CHydraulicErosion* CTerrainEngine_Impl::Internal_GetBestEroder(uint32_t uFilterSize, uint32_t uSeed, int32_t iOffsetX, int32_t iOffsetY, FLOAT_TYPE fWaterLevel)
 {
     // Check GPU
     #ifdef TE_USE_GPU
         try
         {
-            return new CGPUHydraulicErosion(uFilterSize, uSeed, fWaterLevel);
+            return new CGPUHydraulicErosion(uFilterSize, uSeed, iOffsetX, iOffsetY, fWaterLevel);
         }
-        catch (...)
+        catch (std::exception& e)
         {
-            return new CHydraulicErosion(uFilterSize, uSeed, fWaterLevel);
+            printf("%s\n", e.what());
+            printf("Failed to create Vulkan Instance\n");
+            return new CHydraulicErosion(uFilterSize, uSeed, iOffsetX, iOffsetY, fWaterLevel);
         }
     #else
-        return new CHydraulicErosion(uFilterSize, uSeed, fWaterLevel);
+        return new CHydraulicErosion(uFilterSize, uSeed, iOffsetX, iOffsetY, fWaterLevel);
     #endif
 }
 
@@ -127,7 +129,7 @@ void CTerrainEngine_Impl::Internal_Erode(uint32_t uLayerIndex, uint32_t uSteps, 
     auto oVecData = GetInner(oVec);
     auto iVecData = GetInner(iVec);
 
-    auto eroder = Internal_GetBestEroder(uFilterSize, 0, m_fWaterLevel);
+    auto eroder = Internal_GetBestEroder(uFilterSize, 0, m_iXOffset, m_iYOffset ,m_fWaterLevel);
 
 // #ifdef TE_USE_GPU
 //     auto eroder = Internal_GetBestEroder(uFilterSize, 0, m_fWaterLevel);
@@ -165,7 +167,7 @@ void CTerrainEngine_Impl::Internal_ErodeByNormals(uint32_t uLayerIndex, uint32_t
     auto oVecData = GetInner(oVec);
     auto iVecData = GetInner(iVec);
 
-    auto eroder = Internal_GetBestEroder(m_uFilterSize, 0, m_fWaterLevel);
+    auto eroder = Internal_GetBestEroder(m_uFilterSize, 0, m_iXOffset, m_iYOffset, m_fWaterLevel);
 
     // Buffer Rotations
     FLOAT_TYPE* l_pBuffers[2] = {iVecData, oVecData};
