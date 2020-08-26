@@ -353,7 +353,7 @@ void CGPUHydraulicErosion::CreateDevice()
 	vkGetDeviceQueue(m_vkDevice, queueFamilyIndex, 0, &m_vkQueue);
 }
 
-void CGPUHydraulicErosion::CreateBuffer(FDeviceBackedBuffer &stBuffer, uint64_t uSize)
+void CGPUHydraulicErosion::CreateBuffer(FDeviceBackedBuffer &stBuffer, uint64_t uSize, uint64_t wantedFlags)
 {
 	VkBufferCreateInfo bufferCreateInfo = {};
 	bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -387,6 +387,8 @@ void CGPUHydraulicErosion::CreateBuffer(FDeviceBackedBuffer &stBuffer, uint64_t 
 		this flag. */
 
 	uint32_t memType = UINT32_MAX;
+	//uint64_t wantedFlags = (VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+	
 
 	VkPhysicalDeviceMemoryProperties memoryProperties;
 	vkGetPhysicalDeviceMemoryProperties(m_vkPhyDevice, &memoryProperties);
@@ -395,7 +397,7 @@ void CGPUHydraulicErosion::CreateBuffer(FDeviceBackedBuffer &stBuffer, uint64_t 
 	{
 		if (
 			(memoryRequirements.memoryTypeBits & (1 << i)) &&
-			((memoryProperties.memoryTypes[i].propertyFlags & (VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) == (VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)))
+			((memoryProperties.memoryTypes[i].propertyFlags & wantedFlags) == wantedFlags))
 		{
 			memType = i;
 		}
@@ -414,6 +416,12 @@ void CGPUHydraulicErosion::CreateBuffer(FDeviceBackedBuffer &stBuffer, uint64_t 
 	VK_CHECK_RESULT(vkBindBufferMemory(m_vkDevice, stBuffer.vkBuffer, stBuffer.vkDeviceMemory, 0));
 
 	stBuffer.uSize = uSize;
+}
+
+void CGPUHydraulicErosion::CreateBuffer(FDeviceBackedBuffer &stBuffer, uint64_t uSize)
+{
+	uint64_t wantedFlags = ( VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );//  | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	CreateBuffer(stBuffer, uSize, wantedFlags);
 }
 
 void CGPUHydraulicErosion::CreateShaderModules(std::filesystem::path shaderPath)
@@ -574,32 +582,122 @@ void CGPUHydraulicErosion::DeleteBuffer(FDeviceBackedBuffer &stBuffer)
 
 void CGPUHydraulicErosion::VkMemcpy(void *cpuBuffer, FDeviceBackedBuffer &stBuffer, uint64_t uSize)
 {
+	// Stage
+	FDeviceBackedBuffer StageBuffer{};
+	CreateBuffer(StageBuffer, stBuffer.uSize, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+
+	VkBufferCopy stageCopy
+	{
+		0,0,stBuffer.uSize
+	};
+
+	// Command for Buffer Copy
+	VkCommandBufferBeginInfo commandBufferBeginInfo = {
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		0,
+		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+		0};
+
+	VK_CHECK_RESULT(vkBeginCommandBuffer(m_vkCommandBuffer, &commandBufferBeginInfo));
+	vkCmdBindPipeline(m_vkCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_vPipelines[0].vkPipeline);
+	vkCmdBindDescriptorSets(m_vkCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE,
+							m_vPipelines[0].vkPipelineLayout, 0, 1, &m_vkDescriptorSet, 0, 0);
+	vkCmdCopyBuffer(m_vkCommandBuffer, stBuffer.vkBuffer, StageBuffer.vkBuffer, 1, &stageCopy);
+	
+	VK_CHECK_RESULT(vkEndCommandBuffer(m_vkCommandBuffer));
+	VkSubmitInfo submitInfo = {VK_STRUCTURE_TYPE_SUBMIT_INFO, 0, 0, 0, 0, 1, &m_vkCommandBuffer, 0, 0};
+	VK_CHECK_RESULT(vkQueueSubmit(m_vkQueue, 1, &submitInfo, 0));
+	VK_CHECK_RESULT(vkQueueWaitIdle(m_vkQueue));
+	VK_CHECK_RESULT(vkResetCommandBuffer(m_vkCommandBuffer, 0));
+
 	void *hostPtr;
-	VK_CHECK_RESULT(vkMapMemory(m_vkDevice, stBuffer.vkDeviceMemory, 0, stBuffer.uSize, 0, &hostPtr));
+	VK_CHECK_RESULT(vkMapMemory(m_vkDevice, StageBuffer.vkDeviceMemory, 0, StageBuffer.uSize, 0, &hostPtr));
 
-	memcpy(cpuBuffer, hostPtr, std::min(stBuffer.uSize, uSize));
+	memcpy(cpuBuffer, hostPtr, std::min(StageBuffer.uSize, uSize));
 
-	vkUnmapMemory(m_vkDevice, stBuffer.vkDeviceMemory);
+	vkUnmapMemory(m_vkDevice, StageBuffer.vkDeviceMemory);
+	DeleteBuffer(StageBuffer);
 }
 
 void CGPUHydraulicErosion::VkMemcpy(FDeviceBackedBuffer &stBuffer, void *cpuBuffer, uint64_t uSize)
 {
+		// Stage
+	FDeviceBackedBuffer StageBuffer{};
+	CreateBuffer(StageBuffer, stBuffer.uSize, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+
 	void *hostPtr;
-	VK_CHECK_RESULT(vkMapMemory(m_vkDevice, stBuffer.vkDeviceMemory, 0, stBuffer.uSize, 0, &hostPtr));
+	VK_CHECK_RESULT(vkMapMemory(m_vkDevice, StageBuffer.vkDeviceMemory, 0, StageBuffer.uSize, 0, &hostPtr));
 
-	memcpy(hostPtr, cpuBuffer, std::min(stBuffer.uSize, uSize));
+	memcpy(hostPtr, cpuBuffer, std::min(StageBuffer.uSize, uSize));
 
-	vkUnmapMemory(m_vkDevice, stBuffer.vkDeviceMemory);
+	vkUnmapMemory(m_vkDevice, StageBuffer.vkDeviceMemory);
+
+	
+	VkBufferCopy stageCopy
+	{
+		0,0,stBuffer.uSize
+	};
+
+	// Command for Buffer Copy
+	VkCommandBufferBeginInfo commandBufferBeginInfo = {
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		0,
+		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+		0};
+
+	VK_CHECK_RESULT(vkBeginCommandBuffer(m_vkCommandBuffer, &commandBufferBeginInfo));
+	vkCmdBindPipeline(m_vkCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_vPipelines[0].vkPipeline);
+	vkCmdBindDescriptorSets(m_vkCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE,
+							m_vPipelines[0].vkPipelineLayout, 0, 1, &m_vkDescriptorSet, 0, 0);
+	vkCmdCopyBuffer(m_vkCommandBuffer, StageBuffer.vkBuffer, stBuffer.vkBuffer, 1, &stageCopy);
+	
+	VK_CHECK_RESULT(vkEndCommandBuffer(m_vkCommandBuffer));
+	VkSubmitInfo submitInfo = {VK_STRUCTURE_TYPE_SUBMIT_INFO, 0, 0, 0, 0, 1, &m_vkCommandBuffer, 0, 0};
+	VK_CHECK_RESULT(vkQueueSubmit(m_vkQueue, 1, &submitInfo, 0));
+	VK_CHECK_RESULT(vkQueueWaitIdle(m_vkQueue));
+	VK_CHECK_RESULT(vkResetCommandBuffer(m_vkCommandBuffer, 0));
+
+	DeleteBuffer(StageBuffer);
 }
 
 void CGPUHydraulicErosion::VkZeroMemory(FDeviceBackedBuffer &stBuffer)
 {
+	// Stage
+	FDeviceBackedBuffer StageBuffer{};
+	CreateBuffer(StageBuffer, stBuffer.uSize, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+
 	void *hostPtr;
-	VK_CHECK_RESULT(vkMapMemory(m_vkDevice, stBuffer.vkDeviceMemory, 0, stBuffer.uSize, 0, &hostPtr));
+	VK_CHECK_RESULT(vkMapMemory(m_vkDevice, StageBuffer.vkDeviceMemory, 0, StageBuffer.uSize, 0, &hostPtr));
 
 	memset(hostPtr, 0, stBuffer.uSize);
 
-	vkUnmapMemory(m_vkDevice, stBuffer.vkDeviceMemory);
+	vkUnmapMemory(m_vkDevice, StageBuffer.vkDeviceMemory);
+
+	VkBufferCopy stageCopy
+	{
+		0,0,stBuffer.uSize
+	};
+
+	// Command for Buffer Copy
+	VkCommandBufferBeginInfo commandBufferBeginInfo = {
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		0,
+		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+		0};
+
+	VK_CHECK_RESULT(vkBeginCommandBuffer(m_vkCommandBuffer, &commandBufferBeginInfo));
+	vkCmdBindPipeline(m_vkCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_vPipelines[0].vkPipeline);
+	vkCmdBindDescriptorSets(m_vkCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE,
+							m_vPipelines[0].vkPipelineLayout, 0, 1, &m_vkDescriptorSet, 0, 0);
+	vkCmdCopyBuffer(m_vkCommandBuffer, StageBuffer.vkBuffer, stBuffer.vkBuffer, 1, &stageCopy);
+	
+	VK_CHECK_RESULT(vkEndCommandBuffer(m_vkCommandBuffer));
+	VkSubmitInfo submitInfo = {VK_STRUCTURE_TYPE_SUBMIT_INFO, 0, 0, 0, 0, 1, &m_vkCommandBuffer, 0, 0};
+	VK_CHECK_RESULT(vkQueueSubmit(m_vkQueue, 1, &submitInfo, 0));
+	VK_CHECK_RESULT(vkQueueWaitIdle(m_vkQueue));
+	VK_CHECK_RESULT(vkResetCommandBuffer(m_vkCommandBuffer, 0));
+
+	DeleteBuffer(StageBuffer);
 }
 
 // This function may a monolith

@@ -130,6 +130,7 @@ class CGPUHydraulicErosion : public CHydraulicErosion
         void CreateDevice();
         void CreatePhysicalDevice();
         void CreateBuffer(FDeviceBackedBuffer &stBuffer, uint64_t uSize);
+        void CreateBuffer(FDeviceBackedBuffer &stBuffer, uint64_t uSize, uint64_t wantedFlags);
         void CreateShaderModules(std::filesystem::path shaderPath);
         void CreateDescSetLayout();
         void CreateDescSet();
