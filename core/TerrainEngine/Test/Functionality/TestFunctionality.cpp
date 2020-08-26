@@ -6,7 +6,7 @@
 
 int main(int argc, char** argv)
 {
-    float worldScale = 0.35;
+    float worldScale = 0.15;
 
     uint32_t baseRes = 512;
 
@@ -112,7 +112,7 @@ int main(int argc, char** argv)
             st.fCameraDistance = 0.1f;
             st.fStepDistance = 0.1f;
             st.uWorldScaleUnits = 1024;
-            st.fWorldHeightRenderScale = 100.f / worldScale * 0.8;
+            st.fWorldHeightRenderScale = 100.f / worldScale;
             st.fFarClip = 10000.f;
             st.fNearClip = 0.01f;
             auto view = terrainEngine.GetView(0);

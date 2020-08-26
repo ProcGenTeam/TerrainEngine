@@ -3,6 +3,9 @@
 # Edit at https://www.gitignore.io/?templates=c,c++,cuda,python,visualstudio,visualstudiocode
 
 *.spv
+Build/
+gpu/
+
 
 ### C ###
 # Prerequisites

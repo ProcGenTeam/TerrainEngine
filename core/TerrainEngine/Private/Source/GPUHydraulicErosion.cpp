@@ -630,7 +630,7 @@ void CGPUHydraulicErosion::Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
 	cpuSideInfo.fSoilSoftness = 0.3f;
 	cpuSideInfo.fSedimentCapacity = 1.f;
 	cpuSideInfo.fEvaporationRate = 0.01f;
-	cpuSideInfo.fDepositionRate = 0.3f / 6;
+	cpuSideInfo.fDepositionRate = 0.3f / 10;
 	cpuSideInfo.fRainCoeff = 0.0125f;
 
 	// Copy Memory
@@ -773,8 +773,8 @@ void CGPUHydraulicErosion::Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
 
 	vkUpdateDescriptorSets(m_vkDevice, 8, writeDescriptorSet, 0, 0);
 
-	uint32_t safeHeight = ((uHeight - 1) / 32) + 1;
-	uint32_t safeWidth = ((uWidth - 1) / 32) + 1;
+	uint32_t safeHeight = ((uHeight - 1) / 16) + 1;
+	uint32_t safeWidth = ((uWidth - 1) / 16) + 1;
 
 
 
@@ -794,6 +794,7 @@ void CGPUHydraulicErosion::Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
 
 	// This may be changed for speed!
 	vkCmdDispatch(m_vkCommandBuffer, safeWidth, safeHeight, 1);
+	
 
 	VK_CHECK_RESULT(vkEndCommandBuffer(m_vkCommandBuffer));
 
@@ -814,17 +815,18 @@ void CGPUHydraulicErosion::Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
 	VK_CHECK_RESULT(vkQueueWaitIdle(m_vkQueue));
 	VK_CHECK_RESULT(vkResetCommandBuffer(m_vkCommandBuffer, 0));
 
-	uint32_t uSteps = 3000;
+	uint32_t uSteps = 1500;
 
-	for(uint32_t s = 0; s < 3000; ++s)
+	for(uint32_t s = 0; s < uSteps; ++s)
 	{
-		if(s % 10 == 0){printf("Starting iteration %d\n", s);}
+		if(s % 100 == 0){printf("\rStarting iteration %d (%f%%)", s, float(s * 100) / uSteps); fflush(stdout);}
 
 		// Shader Limit
-		uint32_t shaderRain = (s % 50 == 0) && (s < uSteps * 0.9);
+		uint32_t shaderRain = (s % 500 == 0) && (s < uSteps * 0.9);
+		uint32_t shaderDump = (s+1 == uSteps);
 
 		// Apply Both
-		for(uint32_t i = 0; i < 2 + shaderRain + (s+1 == 500); ++i)
+		for(uint32_t i = 0; i < 2 + shaderRain + shaderDump; ++i)
 		//uint32_t i = 0;
 		{
 			//printf("Applying Shader %d\n", i);
@@ -844,6 +846,7 @@ void CGPUHydraulicErosion::Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
 
 			// This may be changed for speed!
 			vkCmdDispatch(m_vkCommandBuffer, safeWidth, safeHeight, 1);
+			//vkCmdDispatch(m_vkCommandBuffer, uWidth, uHeight, 1);
 
 			VK_CHECK_RESULT(vkEndCommandBuffer(m_vkCommandBuffer));
 
