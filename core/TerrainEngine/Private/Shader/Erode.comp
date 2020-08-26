@@ -1,5 +1,6 @@
 #version 450
 //#extension GL_ARB_seperate_shader_objects : enable
+#extension GL_EXT_control_flow_attributes : enable
 
 layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
@@ -100,6 +101,7 @@ void main()
     float sumHeightDifferent = 0;
     int nLowerNeighbours = 0;
 
+    [[unroll]]
     for(int n = 0; n < 8; ++n)
     {
         index = n + (n > 3 ? 1 : 0);
@@ -107,25 +109,19 @@ void main()
         yMod = (index / 3) - 1;
         xMod = (index % 3) - 1;
         
-        //printf("%d means y:%d x:%d\n", n, yMod, xMod);
         yReal = int(y) + yMod;
         xReal = int(x) + xMod;
 
-        // Bounds
-        if (yReal < 0 || yReal >= shaderInfo.uHeight || xReal < 0 || xReal >= shaderInfo.uWidth)
-        {
-            continue;
-        }
-        
-        float checkedWaterLevel = heightMap[yReal * shaderInfo.uWidth + xReal] + waterLevel[yReal * shaderInfo.uWidth + xReal];
-        if (checkedWaterLevel >= waterHeight) { continue; }
+        float checkedWaterLevel = (yReal < 0 || yReal >= shaderInfo.uHeight || xReal < 0 || xReal >= shaderInfo.uWidth) ? 0 : heightMap[yReal * shaderInfo.uWidth + xReal] + waterLevel[yReal * shaderInfo.uWidth + xReal];
+        float deltaLevel = (checkedWaterLevel >= waterHeight) ? 0 : (waterHeight - checkedWaterLevel);
 
         // We have water to move
-        sumHeightDifferent += (waterHeight - checkedWaterLevel);
-        ++nLowerNeighbours;
-        stLowerNeighbours.values[n] = waterHeight - checkedWaterLevel;
+        sumHeightDifferent += deltaLevel;
+        nLowerNeighbours += deltaLevel > 0 ? 1 : 0;
+        stLowerNeighbours.values[n] = deltaLevel;
     }
 
+    [[unroll]]
     for(int n = 0; n < 8; ++n)
     {
         // Is Valid Neighbour?
@@ -140,22 +136,31 @@ void main()
         yReal = int(y) + yMod;
         xReal = int(x) + xMod;
 
-        // Changed nNeighbours to heightDelta
-        if (
+        // // Changed nNeighbours to heightDelta
+        // if (
+        //     yReal < 0 || 
+        //     yReal >= shaderInfo.uHeight || 
+        //     xReal < 0 || 
+        //     xReal >= shaderInfo.uWidth ||
+        //     nLowerNeighbours == 0 ||
+        //     sumHeightDifferent == 0
+        //     )
+        // {
+        //     waterMap[yReal * shaderInfo.uWidth + xReal].values[n] = 0;
+        //     sedimentMap[yReal * shaderInfo.uWidth + xReal].values[n] = 0;
+        //     continue;
+        // }
+
+        bool mixVal = (
             yReal < 0 || 
             yReal >= shaderInfo.uHeight || 
             xReal < 0 || 
             xReal >= shaderInfo.uWidth ||
             nLowerNeighbours == 0 ||
             sumHeightDifferent == 0
-            )
-        {
-            waterMap[yReal * shaderInfo.uWidth + xReal].values[n] = 0;
-            sedimentMap[yReal * shaderInfo.uWidth + xReal].values[n] = 0;
-            continue;
-        }
+            );
 
-        float ratio = (stLowerNeighbours.values[n] / sumHeightDifferent) / (nLowerNeighbours + 1);
+        float ratio = mixVal ? 0 : (stLowerNeighbours.values[n] / sumHeightDifferent) / (nLowerNeighbours + 1);
         float waterToMoveHere = waterLevel[gIdx] * ratio;
         float sedToMoveHere = sedimentLevel[gIdx] * ratio * 0.85f;
 
