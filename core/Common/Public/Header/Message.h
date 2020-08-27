@@ -6,7 +6,7 @@ enum class EThreadType : uint32_t
 {
     Dispatch,
     Listener,
-    
+
     Commission,
 
     General,
@@ -20,8 +20,7 @@ struct FMessage
 {
     EThreadType ThreadType;
     EErrorCodes ErrorType;
-    union
-    {
+    union {
         uint64_t u64_Arg;
         struct
         {

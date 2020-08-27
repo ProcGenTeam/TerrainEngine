@@ -1,32 +1,16 @@
 #include "TerrainEngine/Private/Header/TerrainEngine_Impl.h"
 #include "Common/Public/Header/Types.h"
-#include "TerrainEngine/Private/Header/PerlinNoise.h"
 #include "TerrainEngine/Private/Header/HydraulicErosion.h"
+#include "TerrainEngine/Private/Header/PerlinNoise.h"
 //#include <bits/stdint-uintn.h>
 //#include <cmath>
 #include <cstdint>
 
-CTerrainEngine_Impl::CTerrainEngine_Impl
-(
-    FLOAT_TYPE fWaterLevel,
-    uint32_t uWidth,
-    uint32_t uHeight,
-    int32_t iXOffset,
-    int32_t iYOffset,
-    float fGlobalScale,
-    uint32_t uOverscan,
-    uint32_t uFilterSize
-) : 
-    m_fWaterLevel(fWaterLevel),
-    m_uOverScan(std::max(uOverscan, uFilterSize * 2)),
-    m_uWidth(uWidth + uOverscan * 2),
-    m_uHeight(uHeight + uOverscan * 2),
-    m_iXOffset(iXOffset),
-    m_iYOffset(iYOffset),
-    m_fGlobalScale(fGlobalScale),
-    m_bImmediateMode(false),
-    m_uFilterSize(uFilterSize),
-    m_uStackPointer(0)
+CTerrainEngine_Impl::CTerrainEngine_Impl(FLOAT_TYPE fWaterLevel, uint32_t uWidth, uint32_t uHeight, int32_t iXOffset,
+                                         int32_t iYOffset, float fGlobalScale, uint32_t uOverscan, uint32_t uFilterSize)
+    : m_fWaterLevel(fWaterLevel), m_uOverScan(std::max(uOverscan, uFilterSize * 2)), m_uWidth(uWidth + uOverscan * 2),
+      m_uHeight(uHeight + uOverscan * 2), m_iXOffset(iXOffset), m_iYOffset(iYOffset), m_fGlobalScale(fGlobalScale),
+      m_bImmediateMode(false), m_uFilterSize(uFilterSize), m_uStackPointer(0)
 {
     // Create Default Layer
     auto temp = std::make_shared<std::vector<FLOAT_TYPE>>(std::vector<FLOAT_TYPE>(m_uHeight * m_uWidth));
@@ -36,29 +20,20 @@ CTerrainEngine_Impl::CTerrainEngine_Impl
     Internal_Initialise();
 
     Internal_TrackMemoryLoad(m_uHeight * m_uWidth * sizeof(FLOAT_TYPE), EMemoryUseTypes::LayerMemory);
-    
-    //m_pData = std::shared_ptr<std::vector<uint32_t>>(std::vector<uint32_t>[m_uWidth * m_uHeight]);
+
+    // m_pData = std::shared_ptr<std::vector<uint32_t>>(std::vector<uint32_t>[m_uWidth * m_uHeight]);
 }
 
-CTerrainEngine_Impl::CTerrainEngine_Impl
-(
-    FLOAT_TYPE fWaterLevel,
-    std::unique_ptr<std::vector<FLOAT_TYPE>> vWorld,
-    uint32_t uWidth,
-    float fScale,
-    uint32_t uOverscan
-) : 
-    m_fWaterLevel(fWaterLevel),
-    m_uOverScan(uOverscan),
-    m_uWidth(uWidth),
-    m_fGlobalScale(fScale),
-    m_bImmediateMode(false)
+CTerrainEngine_Impl::CTerrainEngine_Impl(FLOAT_TYPE fWaterLevel, std::unique_ptr<std::vector<FLOAT_TYPE>> vWorld,
+                                         uint32_t uWidth, float fScale, uint32_t uOverscan)
+    : m_fWaterLevel(fWaterLevel), m_uOverScan(uOverscan), m_uWidth(uWidth), m_fGlobalScale(fScale),
+      m_bImmediateMode(false)
 {
     this->m_uHeight = vWorld->size() / uWidth;
-    
+
     Internal_Initialise();
     // This is unique ptr
-    //this->m_pData = std::move(vWorld);
+    // this->m_pData = std::move(vWorld);
 }
 
 void CTerrainEngine_Impl::Internal_Initialise()
@@ -70,7 +45,6 @@ void CTerrainEngine_Impl::Internal_Initialise()
 
 CTerrainEngine_Impl::~CTerrainEngine_Impl()
 {
-
 }
 
 ////// ////// //////
@@ -119,7 +93,7 @@ void CTerrainEngine_Impl::DisableImmediateMode()
 }
 void CTerrainEngine_Impl::Render()
 {
-    for(; m_uStackPointer < m_vQueue.size(); ++m_uStackPointer)
+    for (; m_uStackPointer < m_vQueue.size(); ++m_uStackPointer)
     {
         Internal_LazyEvaluate(m_vQueue[m_uStackPointer]);
     }
@@ -128,16 +102,17 @@ void CTerrainEngine_Impl::Render()
 ////// ////// //////
 // Generation
 //
-void CTerrainEngine_Impl::Erode(uint32_t uLayerIndex, uint32_t uSteps, uint32_t uTerrainLayerIndex, uint32_t uFilterSize)
+void CTerrainEngine_Impl::Erode(uint32_t uLayerIndex, uint32_t uSteps, uint32_t uTerrainLayerIndex,
+                                uint32_t uFilterSize)
 {
     // Memory
     Internal_TrackMemoryLoad(sizeof(FLOAT_TYPE) * m_uHeight * m_uWidth, EMemoryUseTypes::MethodMemory);
     Internal_TrackMemoryLoad(sizeof(glm::vec4) * m_uHeight * m_uWidth, EMemoryUseTypes::MethodMemory);
     Internal_TrackMemoryLoad(sizeof(FLOAT_TYPE) * 16 * m_uHeight * m_uWidth, EMemoryUseTypes::MethodMemory);
-    //Internal_TrackMemoryLoad(sizeof(glm::vec3) * m_uHeight * m_uWidth, EMemoryUseTypes::MethodMemory);
+    // Internal_TrackMemoryLoad(sizeof(glm::vec3) * m_uHeight * m_uWidth, EMemoryUseTypes::MethodMemory);
 
     // Memory use isn't overly useful here
-    if(this->m_bImmediateMode)
+    if (this->m_bImmediateMode)
     {
         Internal_Erode(uLayerIndex, uSteps, uTerrainLayerIndex, uFilterSize);
     }
@@ -163,7 +138,7 @@ void CTerrainEngine_Impl::ErodeByNormals(uint32_t uLayerIndex, uint32_t uSteps)
     Internal_TrackMemoryLoad(sizeof(FLOAT_TYPE) * m_uHeight * m_uWidth, EMemoryUseTypes::MethodMemory);
 
     // Memory use isn't overly useful here
-    if(this->m_bImmediateMode)
+    if (this->m_bImmediateMode)
     {
         Internal_ErodeByNormals(uLayerIndex, uSteps);
     }
@@ -181,7 +156,7 @@ void CTerrainEngine_Impl::ErodeByNormals(uint32_t uLayerIndex, uint32_t uSteps)
 
 void CTerrainEngine_Impl::Perlin(uint32_t uLayerIndex, float fScale)
 {
-    if(this->m_bImmediateMode)
+    if (this->m_bImmediateMode)
     {
         Internal_Perlin(uLayerIndex, fScale);
     }
@@ -195,16 +170,15 @@ void CTerrainEngine_Impl::Perlin(uint32_t uLayerIndex, float fScale)
     }
 }
 
-
 ////// ////// //////
 // Layer Control
 //
- uint32_t CTerrainEngine_Impl::CreateLayer()
+uint32_t CTerrainEngine_Impl::CreateLayer()
 {
     // Update rolling memory use
     Internal_TrackMemoryLoad(sizeof(FLOAT_TYPE) * m_uWidth * m_uHeight, EMemoryUseTypes::LayerMemory);
 
-    if(this->m_bImmediateMode)
+    if (this->m_bImmediateMode)
     {
         Internal_CreateLayer();
     }
@@ -223,7 +197,7 @@ void CTerrainEngine_Impl::DestroyLayer(uint32_t uLayerIndex)
     // Total needs to drop
     Internal_TrackMemoryLoad(-sizeof(FLOAT_TYPE) * m_uWidth * m_uHeight, EMemoryUseTypes::LayerMemory);
 
-    if(this->m_bImmediateMode)
+    if (this->m_bImmediateMode)
     {
         Internal_DestroyLayer(uLayerIndex);
     }
@@ -238,7 +212,7 @@ void CTerrainEngine_Impl::DestroyLayer(uint32_t uLayerIndex)
 
 void CTerrainEngine_Impl::MixLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint32_t uOtherSrcLayer)
 {
-    if(this->m_bImmediateMode)
+    if (this->m_bImmediateMode)
     {
         Internal_MixLayers(uDstLayer, uSrcLayer, uOtherSrcLayer);
     }
@@ -260,9 +234,10 @@ void CTerrainEngine_Impl::RegisterMixingFunction(LayerMixer fnMixingFunction)
 
 // TODO - This way of passing functions should be updated
 // Add a Register Function routine and use a numeric
-void CTerrainEngine_Impl::MixLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint32_t uOtherSrcLayer, uint32_t uMixingFunctionIndex)
+void CTerrainEngine_Impl::MixLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint32_t uOtherSrcLayer,
+                                    uint32_t uMixingFunctionIndex)
 {
-    if(this->m_bImmediateMode)
+    if (this->m_bImmediateMode)
     {
         Internal_MixLayersCustom(uDstLayer, uSrcLayer, uOtherSrcLayer, m_vMixingFunctions[uMixingFunctionIndex]);
     }
@@ -280,7 +255,7 @@ void CTerrainEngine_Impl::MixLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint
 
 void CTerrainEngine_Impl::AddLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint32_t uOtherSrcLayer)
 {
-    if(this->m_bImmediateMode)
+    if (this->m_bImmediateMode)
     {
         Internal_AddLayers(uDstLayer, uSrcLayer, uOtherSrcLayer);
     }
@@ -297,7 +272,7 @@ void CTerrainEngine_Impl::AddLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint
 
 void CTerrainEngine_Impl::SubLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint32_t uOtherSrcLayer)
 {
-    if(this->m_bImmediateMode)
+    if (this->m_bImmediateMode)
     {
         Internal_SubLayers(uDstLayer, uSrcLayer, uOtherSrcLayer);
     }
@@ -314,7 +289,7 @@ void CTerrainEngine_Impl::SubLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint
 
 void CTerrainEngine_Impl::MulLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint32_t uOtherSrcLayer)
 {
-    if(this->m_bImmediateMode)
+    if (this->m_bImmediateMode)
     {
         Internal_MulLayers(uDstLayer, uSrcLayer, uOtherSrcLayer);
     }
@@ -331,7 +306,7 @@ void CTerrainEngine_Impl::MulLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint
 
 void CTerrainEngine_Impl::DivLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint32_t uOtherSrcLayer)
 {
-    if(this->m_bImmediateMode)
+    if (this->m_bImmediateMode)
     {
         Internal_DivLayers(uDstLayer, uSrcLayer, uOtherSrcLayer);
     }
@@ -348,7 +323,7 @@ void CTerrainEngine_Impl::DivLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint
 
 void CTerrainEngine_Impl::AddLayerScalar(uint32_t uDstLayer, uint32_t uSrcLayer, float fScalar)
 {
-    if(this->m_bImmediateMode)
+    if (this->m_bImmediateMode)
     {
         Internal_AddLayerScalar(uDstLayer, uSrcLayer, fScalar);
     }
@@ -365,7 +340,7 @@ void CTerrainEngine_Impl::AddLayerScalar(uint32_t uDstLayer, uint32_t uSrcLayer,
 
 void CTerrainEngine_Impl::SubLayerScalar(uint32_t uDstLayer, uint32_t uSrcLayer, float fScalar)
 {
-    if(this->m_bImmediateMode)
+    if (this->m_bImmediateMode)
     {
         Internal_SubLayerScalar(uDstLayer, uSrcLayer, fScalar);
     }
@@ -382,7 +357,7 @@ void CTerrainEngine_Impl::SubLayerScalar(uint32_t uDstLayer, uint32_t uSrcLayer,
 
 void CTerrainEngine_Impl::MulLayerScalar(uint32_t uDstLayer, uint32_t uSrcLayer, float fScalar)
 {
-    if(this->m_bImmediateMode)
+    if (this->m_bImmediateMode)
     {
         Internal_MulLayerScalar(uDstLayer, uSrcLayer, fScalar);
     }
@@ -399,7 +374,7 @@ void CTerrainEngine_Impl::MulLayerScalar(uint32_t uDstLayer, uint32_t uSrcLayer,
 
 void CTerrainEngine_Impl::DivLayerScalar(uint32_t uDstLayer, uint32_t uSrcLayer, float fScalar)
 {
-    if(this->m_bImmediateMode)
+    if (this->m_bImmediateMode)
     {
         Internal_DivLayerScalar(uDstLayer, uSrcLayer, fScalar);
     }

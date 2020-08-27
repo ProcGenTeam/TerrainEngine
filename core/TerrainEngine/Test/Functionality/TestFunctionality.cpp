@@ -1,32 +1,22 @@
-#include <iostream>
-#include "core/TerrainEngine/Private/Header/TerrainEngine_Impl.h"
 #include "core/RenderEngine/Public/Header/RenderEngine.h"
+#include "core/TerrainEngine/Private/Header/TerrainEngine_Impl.h"
 #include <fstream>
+#include <iostream>
 
-
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
     float worldScale = 0.15;
 
     uint32_t baseRes = 512;
 
-    for(int i = 0; i < 1; ++i)
+    for (int i = 0; i < 1; ++i)
     {
         uint32_t x = i / 2;
         uint32_t y = i % 2;
 
         std::cout << x << " " << y << std::endl;
 
-        auto terrainEngine = CTerrainEngine_Impl(
-            0.21f,
-            baseRes,
-            baseRes,
-            baseRes * x,
-            baseRes * y,
-            worldScale,
-            32,
-            2
-        );
+        auto terrainEngine = CTerrainEngine_Impl(0.21f, baseRes, baseRes, baseRes * x, baseRes * y, worldScale, 32, 2);
 
         terrainEngine.EnableImmediateMode();
 
@@ -54,7 +44,7 @@ int main(int argc, char** argv)
         terrainEngine.MulLayers(1, 1, 2);
         terrainEngine.AddLayers(0, 0, 1);
 
-        terrainEngine.MulLayerScalar(0,0,1.5);
+        terrainEngine.MulLayerScalar(0, 0, 1.5);
 
         // // terrainEngine.MulLayerScalar(0,0,0);
         terrainEngine.Perlin(1, 5);
@@ -62,21 +52,19 @@ int main(int argc, char** argv)
         terrainEngine.MulLayers(1, 1, 1);
         terrainEngine.MulLayers(1, 1, 2);
         terrainEngine.MulLayerScalar(1, 1, 0.95);
-        //terrainEngine.MulLayerScalar(1, 1, 0.0005);
-        //terrainEngine.AddLayers(0,0,1);
+        // terrainEngine.MulLayerScalar(1, 1, 0.0005);
+        // terrainEngine.AddLayers(0,0,1);
 
-
-
-        //terrainEngine.MulLayerScalar(0, 0, 0.33);
+        // terrainEngine.MulLayerScalar(0, 0, 0.33);
 
         // Show view holding locks
         {
             auto view = terrainEngine.GetView(0);
 
             std::cout << "Holding " << view.use_count() << " views to the array" << std::endl;
-            //std::cout << view->size() << std::endl;
+            // std::cout << view->size() << std::endl;
 
-            //terrainEngine.ErodeByNormals(0, 8);
+            // terrainEngine.ErodeByNormals(0, 8);
             terrainEngine.Erode(0, 1000, 1);
 
             // for(uint32_t x = 0; x < 5; ++x)
@@ -89,13 +77,16 @@ int main(int argc, char** argv)
             std::cout << "Holding " << view.use_count() << " views to the array" << std::endl;
         }
 
-        std::cout << "Peak Mem Use: " << terrainEngine.GetPeakMemoryUse() / (1024.0 * 1024.0) << " MiB" << std::endl;    
-        std::cout << "Peak Layer Mem Use: " << terrainEngine.GetPeakMemoryUse(EMemoryUseTypes::LayerMemory) / (1024.0 * 1024.0) << " MiB" << std::endl; 
-        std::cout << "Peak Transient Method Mem Use: " << terrainEngine.GetPeakMemoryUse(EMemoryUseTypes::MethodMemory) / (1024.0 * 1024.0) << " MiB" << std::endl; 
+        std::cout << "Peak Mem Use: " << terrainEngine.GetPeakMemoryUse() / (1024.0 * 1024.0) << " MiB" << std::endl;
+        std::cout << "Peak Layer Mem Use: "
+                  << terrainEngine.GetPeakMemoryUse(EMemoryUseTypes::LayerMemory) / (1024.0 * 1024.0) << " MiB"
+                  << std::endl;
+        std::cout << "Peak Transient Method Mem Use: "
+                  << terrainEngine.GetPeakMemoryUse(EMemoryUseTypes::MethodMemory) / (1024.0 * 1024.0) << " MiB"
+                  << std::endl;
 
-        //std::cout << view->at(2) << std::endl;
-        //std::cout << view->at(9 * 1001 + 234) << std::endl;
-
+        // std::cout << view->at(2) << std::endl;
+        // std::cout << view->at(9 * 1001 + 234) << std::endl;
 
         // I'm bored, let's write to disk :)
         {
@@ -104,9 +95,9 @@ int main(int argc, char** argv)
             std::ofstream of(std::to_string(x) + "," + std::to_string(y) + ".hgt", std::ios::binary);
             auto lPtr = *view.get();
             uint32_t lSize = baseRes + 64;
-            of.write(reinterpret_cast<char*>(&lSize), sizeof(uint32_t));
-            of.write(reinterpret_cast<char*>(&lSize), sizeof(uint32_t));
-            of.write(reinterpret_cast<char*>(&lPtr[0]), view->size() * sizeof(lPtr[0]));
+            of.write(reinterpret_cast<char *>(&lSize), sizeof(uint32_t));
+            of.write(reinterpret_cast<char *>(&lSize), sizeof(uint32_t));
+            of.write(reinterpret_cast<char *>(&lPtr[0]), view->size() * sizeof(lPtr[0]));
         }
 
         {
@@ -124,7 +115,6 @@ int main(int argc, char** argv)
             auto rend = CRenderEngine(st);
             rend.MarchedRender("skyHigh_" + std::to_string(x) + "_" + std::to_string(y) + ".rgb", view, baseRes + 64);
         }
-
     }
     return 0;
 }

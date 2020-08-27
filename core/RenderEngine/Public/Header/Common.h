@@ -7,7 +7,7 @@ struct FCameraSettings
     float fCameraDistance;
 
     float fStepDistance;
-    
+
     float fFarClip;
     float fNearClip;
 
@@ -17,5 +17,4 @@ struct FCameraSettings
 
     uint32_t uWidth;
     uint32_t uHeight;
-
 };

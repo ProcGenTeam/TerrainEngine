@@ -1,13 +1,12 @@
-#include <iostream>
-#include "core/TerrainEngine/Private/Header/TerrainEngine_Impl.h"
 #include "core/RenderEngine/Public/Header/RenderEngine.h"
-#include <fstream>
+#include "core/TerrainEngine/Private/Header/TerrainEngine_Impl.h"
 #include <chrono>
+#include <fstream>
+#include <iostream>
 
-
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
-    if(argc < 3)
+    if (argc < 3)
     {
         std::cout << "Usage: " << argv[0] << " <resolution> <iterations>" << std::endl;
         return 255;
@@ -17,16 +16,7 @@ int main(int argc, char** argv)
     uint32_t baseRes = std::stoull(argv[1]);
     uint32_t iterations = std::stoull(argv[2]);
 
-    auto terrainEngine = CTerrainEngine_Impl(
-        0.125f,
-        baseRes,
-        baseRes,
-        0,
-        0,
-        worldScale,
-        32,
-        2
-    );
+    auto terrainEngine = CTerrainEngine_Impl(0.125f, baseRes, baseRes, 0, 0, worldScale, 32, 2);
 
     // Enable Immediate. We want to just build everything
     terrainEngine.EnableImmediateMode();
@@ -58,7 +48,7 @@ int main(int argc, char** argv)
     auto startTime = std::chrono::high_resolution_clock::now();
 
     // Show view holding locks
-    for(uint32_t i = 0; i < 1; ++i)
+    for (uint32_t i = 0; i < 1; ++i)
     {
         terrainEngine.Erode(0, iterations);
     }
@@ -69,17 +59,22 @@ int main(int argc, char** argv)
 
     std::cout << std::endl;
     std::cout << "RESULTS" << std::endl;
-    std::cout << "-------"<<std::endl;
+    std::cout << "-------" << std::endl;
 
     std::cout << "Time Total: " << timeTakenUS / 1000000.f << " s" << std::endl;
     std::cout << "S per Iteration: " << (timeTakenUS / iterations) / 1000000.f << " s" << std::endl;
-    std::cout << "uS per Iteration per Pixel: " << (timeTakenUS / iterations) / (float(baseRes * baseRes)) << " uS" << std::endl;
+    std::cout << "uS per Iteration per Pixel: " << (timeTakenUS / iterations) / (float(baseRes * baseRes)) << " uS"
+              << std::endl;
 
     std::cout << std::endl;
 
-    std::cout << "Peak Mem Use: " << terrainEngine.GetPeakMemoryUse() / (1024.0 * 1024.0) << " MiB" << std::endl;    
-    std::cout << "Peak Layer Mem Use: " << terrainEngine.GetPeakMemoryUse(EMemoryUseTypes::LayerMemory) / (1024.0 * 1024.0) << " MiB" << std::endl; 
-    std::cout << "Peak Transient Method Mem Use: " << terrainEngine.GetPeakMemoryUse(EMemoryUseTypes::MethodMemory) / (1024.0 * 1024.0) << " MiB" << std::endl; 
-    
+    std::cout << "Peak Mem Use: " << terrainEngine.GetPeakMemoryUse() / (1024.0 * 1024.0) << " MiB" << std::endl;
+    std::cout << "Peak Layer Mem Use: "
+              << terrainEngine.GetPeakMemoryUse(EMemoryUseTypes::LayerMemory) / (1024.0 * 1024.0) << " MiB"
+              << std::endl;
+    std::cout << "Peak Transient Method Mem Use: "
+              << terrainEngine.GetPeakMemoryUse(EMemoryUseTypes::MethodMemory) / (1024.0 * 1024.0) << " MiB"
+              << std::endl;
+
     return 0;
 }

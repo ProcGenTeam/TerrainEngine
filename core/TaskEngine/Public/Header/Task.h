@@ -1,8 +1,8 @@
 #pragma once
+#include "TerrainEngine/Public/Header/Operations.h"
 #include <cstdint>
 #include <memory>
 #include <vector>
-#include "TerrainEngine/Public/Header/Operations.h"
 
 struct FTask
 {

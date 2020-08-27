@@ -1,12 +1,14 @@
 #include "TerrainEngine/Public/Header/TerrainEngine.h"
 #include "TerrainEngine/Private/Header/TerrainEngine_Impl.h"
 
-#define Super (reinterpret_cast<CTerrainEngine_Impl*>(this->m_implementation))
+#define Super (reinterpret_cast<CTerrainEngine_Impl *>(this->m_implementation))
 
-TerrainEngine::CTerrainEngine::CTerrainEngine(FLOAT_TYPE fWaterLevel, uint32_t uWidth, uint32_t uHeight, int32_t iXOffset, int32_t iYOffset, float fScale, uint32_t uOverscan, uint32_t uFilterSize)
- : m_implementation(new CTerrainEngine_Impl(fWaterLevel, uWidth, uHeight, iXOffset, iYOffset, fScale, uOverscan, uFilterSize))
+TerrainEngine::CTerrainEngine::CTerrainEngine(FLOAT_TYPE fWaterLevel, uint32_t uWidth, uint32_t uHeight,
+                                              int32_t iXOffset, int32_t iYOffset, float fScale, uint32_t uOverscan,
+                                              uint32_t uFilterSize)
+    : m_implementation(
+          new CTerrainEngine_Impl(fWaterLevel, uWidth, uHeight, iXOffset, iYOffset, fScale, uOverscan, uFilterSize))
 {
-
 }
 
 TerrainEngine::CTerrainEngine::~CTerrainEngine()
@@ -16,7 +18,7 @@ TerrainEngine::CTerrainEngine::~CTerrainEngine()
 
 ////// ////// //////
 // Poll Current State
-// 
+//
 std::shared_ptr<std::vector<FLOAT_TYPE>> TerrainEngine::CTerrainEngine::GetView(uint32_t uLayerIndex)
 {
     return Super->GetView(uLayerIndex);
@@ -48,7 +50,8 @@ void TerrainEngine::CTerrainEngine::Render()
 ////// ////// //////
 // Generation
 //
-void TerrainEngine::CTerrainEngine::Erode(uint32_t uLayerIndex, uint32_t uSteps, uint32_t uTerrainLayerIndex, uint32_t uFilterSize)
+void TerrainEngine::CTerrainEngine::Erode(uint32_t uLayerIndex, uint32_t uSteps, uint32_t uTerrainLayerIndex,
+                                          uint32_t uFilterSize)
 {
     Super->Erode(uLayerIndex, uSteps, uTerrainLayerIndex, uFilterSize);
 }
@@ -81,7 +84,8 @@ void TerrainEngine::CTerrainEngine::MixLayers(uint32_t uDstLayer, uint32_t uSrcL
     Super->MixLayers(uDstLayer, uSrcLayer, uOtherSrcLayer);
 }
 
-void TerrainEngine::CTerrainEngine::MixLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint32_t uOtherSrcLayer, uint32_t uMixingFunctionIndex)
+void TerrainEngine::CTerrainEngine::MixLayers(uint32_t uDstLayer, uint32_t uSrcLayer, uint32_t uOtherSrcLayer,
+                                              uint32_t uMixingFunctionIndex)
 {
     Super->MixLayers(uDstLayer, uSrcLayer, uOtherSrcLayer, uMixingFunctionIndex);
 }

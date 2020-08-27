@@ -5,13 +5,11 @@
 #include <iostream>
 #include <memory>
 
-
 CTaskEngine_Impl::CTaskEngine_Impl(uint64_t uWidth, uint64_t uHeight, uint32_t uTileSize)
-: m_bShouldThreadTeardown(false),
-    m_uTileSize(uTileSize)
+    : m_bShouldThreadTeardown(false), m_uTileSize(uTileSize)
 {
     // Make the pool
-    for(uint32_t i = 0; i < std::thread::hardware_concurrency(); ++i)
+    for (uint32_t i = 0; i < std::thread::hardware_concurrency(); ++i)
     {
         m_vtrTaskPool.push_back(std::thread(&CTaskEngine_Impl::RT_Process, this));
     }
@@ -19,12 +17,13 @@ CTaskEngine_Impl::CTaskEngine_Impl(uint64_t uWidth, uint64_t uHeight, uint32_t u
     auto uXTiles = ((uWidth - 1) / uTileSize) + 1;
     auto uYTiles = ((uHeight - 1) / uTileSize) + 1;
 
-    std::cout << "Generating " << uXTiles * uYTiles << " tiles (" << uTileSize * uTileSize * uXTiles * uYTiles << " pixels)" << std::endl;
+    std::cout << "Generating " << uXTiles * uYTiles << " tiles (" << uTileSize * uTileSize * uXTiles * uYTiles
+              << " pixels)" << std::endl;
 
     // Generate Tasks
-    for(uint32_t y = 0; y < uYTiles; ++y)
+    for (uint32_t y = 0; y < uYTiles; ++y)
     {
-        for(uint32_t x = 0; x < uXTiles; ++x)
+        for (uint32_t x = 0; x < uXTiles; ++x)
         {
             FTask task{};
             task.iXOffset = x * uTileSize;
@@ -36,13 +35,14 @@ CTaskEngine_Impl::CTaskEngine_Impl(uint64_t uWidth, uint64_t uHeight, uint32_t u
 
 CTaskEngine_Impl::~CTaskEngine_Impl()
 {
-    
 }
 
 ETaskErrorCodes CTaskEngine_Impl::ScheduleTask(FTask &stTask, std::vector<FOperation> &vHistory)
 {
-    if(m_vpNetworkEngine.empty()) { return ETaskErrorCodes::Task_NoEngines; }
-
+    if (m_vpNetworkEngine.empty())
+    {
+        return ETaskErrorCodes::Task_NoEngines;
+    }
 
     // Pick best engine
     m_vpNetworkEngine[0]->SubmitTask(stTask, vHistory);
@@ -52,28 +52,28 @@ ETaskErrorCodes CTaskEngine_Impl::ScheduleTask(FTask &stTask, std::vector<FOpera
 
 ETaskErrorCodes CTaskEngine_Impl::Render(std::vector<FOperation> &vHistory)
 {
-    while(m_qTasks.size() > 0)
+    while (m_qTasks.size() > 0)
     {
         auto task = m_qTasks.front();
 
         auto ret = ScheduleTask(task, vHistory);
-        if(ret != ETaskErrorCodes::NoError) { return ret; }
+        if (ret != ETaskErrorCodes::NoError)
+        {
+            return ret;
+        }
 
         m_qTasks.pop();
     }
 
     return ETaskErrorCodes::NoError;
-
 }
 
 void CTaskEngine_Impl::RT_Process()
 {
-    while(true)
+    while (true)
     {
         std::unique_lock<std::mutex> lock(m_mtxSignal);
-        m_cvSignal.wait(lock, [this](){
-            return !m_qProcTasks.empty();
-        });
+        m_cvSignal.wait(lock, [this]() { return !m_qProcTasks.empty(); });
 
         auto t = m_qProcTasks.front();
         m_qProcTasks.pop();
@@ -93,14 +93,14 @@ void CTaskEngine_Impl::RT_Process()
         uint32_t systemMemoryUsed = 0;
         uint32_t systemTotalUsableMem = 100;
 
-        if(mmu > systemTotalUsableMem)
+        if (mmu > systemTotalUsableMem)
         {
             // Ha...
 
             continue;
         }
 
-        while(systemMemoryUsed + mmu > systemTotalUsableMem)
+        while (systemMemoryUsed + mmu > systemTotalUsableMem)
         {
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
@@ -126,9 +126,7 @@ FMessage CTaskEngine_Impl::ReadMessage()
     // Wait on not being empty
     std::unique_lock<std::mutex> lock(m_mtxMessageQueue);
 
-    m_cvMessageQueue.wait(lock, [this](){
-        return !m_qMessageQueue.empty();
-    });
+    m_cvMessageQueue.wait(lock, [this]() { return !m_qMessageQueue.empty(); });
 
     // Get Data
     auto retVar = m_qMessageQueue.front();
@@ -143,9 +141,10 @@ FMessage CTaskEngine_Impl::ReadMessage()
 
 void CTaskEngine_Impl::RT_Dispatch()
 {
-    while(true)
+    while (true)
     {
-        if(m_bShouldThreadTeardown) return;
+        if (m_bShouldThreadTeardown)
+            return;
 
         FDispatchTask lTask{};
 
@@ -175,7 +174,10 @@ ETaskErrorCodes CTaskEngine_Impl::Listen(uint16_t uPort)
     m_pNetServer = std::make_shared<CNetworkEngine_Impl>();
 
     auto err = m_pNetServer->Listen(uPort);
-    if (err != ETaskErrorCodes::NoError) { return err; }
+    if (err != ETaskErrorCodes::NoError)
+    {
+        return err;
+    }
 
     m_trServer = std::thread(&CTaskEngine_Impl::RT_Dispatch, this);
 
@@ -198,6 +200,6 @@ ETaskErrorCodes CTaskEngine_Impl::RegisterNode(std::string strHostname, uint16_t
     m_vpNetworkEngine.push_back(temp);
 
     auto ret = temp->RegisterNode(strHostname, uPort);
- 
+
     return ret;
 }

@@ -40,19 +40,17 @@ struct FOperation
 {
     EOperationTypes OpType;
 
-    union
-    {
-        struct 
+    union {
+        struct
         {
             uint32_t u32Arg1;
             uint32_t u32Arg2;
         };
         uint64_t u64Arg1;
     };
-    
-    union
-    {
-        struct 
+
+    union {
+        struct
         {
             uint32_t u32Arg3;
             uint32_t u32Arg4;

@@ -4,9 +4,9 @@
 
 class CCuTerrainEngine_Impl : public CTerrainEngine_Impl
 {
-    private:
-        // Here we want to make things easy :)
-    protected:
-    public:
+private:
+    // Here we want to make things easy :)
+protected:
+public:
 };
 #endif
