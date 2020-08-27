@@ -34,7 +34,7 @@ class TERRAIN_ENGINE_API CTerrainEngine
         ////// ////// //////
         // Generation
         //
-        void Erode(uint32_t uLayerIndex, uint32_t uSteps, uint32_t uFilterSize = 0);
+        void Erode(uint32_t uLayerIndex, uint32_t uSteps, uint32_t uTerrainLayerIndex = UINT32_MAX, uint32_t uFilterSize = 0);
         void ErodeByNormals(uint32_t uLayerIndex, uint32_t uSteps);
         void Perlin(uint32_t uLayerIndex, float fScale);
 

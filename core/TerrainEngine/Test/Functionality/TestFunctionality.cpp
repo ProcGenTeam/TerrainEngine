@@ -18,7 +18,7 @@ int main(int argc, char** argv)
         std::cout << x << " " << y << std::endl;
 
         auto terrainEngine = CTerrainEngine_Impl(
-            0.01f,
+            0.21f,
             baseRes,
             baseRes,
             baseRes * x,
@@ -57,9 +57,13 @@ int main(int argc, char** argv)
         terrainEngine.MulLayerScalar(0,0,1.5);
 
         // // terrainEngine.MulLayerScalar(0,0,0);
-        terrainEngine.Perlin(1, 120);
-        terrainEngine.MulLayerScalar(1, 1, 0.0005);
-        terrainEngine.AddLayers(0,0,1);
+        terrainEngine.Perlin(1, 5);
+        terrainEngine.Perlin(2, 10);
+        terrainEngine.MulLayers(1, 1, 1);
+        terrainEngine.MulLayers(1, 1, 2);
+        terrainEngine.MulLayerScalar(1, 1, 0.95);
+        //terrainEngine.MulLayerScalar(1, 1, 0.0005);
+        //terrainEngine.AddLayers(0,0,1);
 
 
 
@@ -73,7 +77,7 @@ int main(int argc, char** argv)
             //std::cout << view->size() << std::endl;
 
             //terrainEngine.ErodeByNormals(0, 8);
-            terrainEngine.Erode(0, 1000);
+            terrainEngine.Erode(0, 1000, 1);
 
             // for(uint32_t x = 0; x < 5; ++x)
             // {

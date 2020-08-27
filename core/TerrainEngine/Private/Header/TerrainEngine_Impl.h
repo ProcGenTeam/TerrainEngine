@@ -58,7 +58,7 @@ class CTerrainEngine_Impl
         ////// ////// //////
         // Private Generation
         //
-        virtual void Internal_Erode(uint32_t uLayerIndex, uint32_t uSteps, uint32_t uFilterSize);
+        virtual void Internal_Erode(uint32_t uLayerIndex, uint32_t uSteps, uint32_t uTerrainLayerIndex, uint32_t uFilterSize);
         virtual void Internal_ErodeByNormals(uint32_t uLayerIndex, uint32_t uSteps);
         virtual void Internal_Perlin(uint32_t uLayerIndex, float fScale);
 
@@ -108,7 +108,7 @@ class CTerrainEngine_Impl
         ////// ////// //////
         // Generation
         //
-        virtual void Erode(uint32_t uLayerIndex, uint32_t uSteps, uint32_t uFilterSize = 0);
+        virtual void Erode(uint32_t uLayerIndex, uint32_t uSteps, uint32_t uTerrainLayerIndex = UINT32_MAX, uint32_t uFilterSize = 0);
         virtual void ErodeByNormals(uint32_t uLayerIndex, uint32_t uSteps);
         virtual void Perlin(uint32_t uLayerIndex, float fScale);
 

@@ -14,6 +14,7 @@ struct InfoBuffer
     float fRainCoeff;
     float fSedimentCapacity;
     float fWaterLevel;
+    uint bClearTerrain;
 };
 
 struct FHydFloatCombiner
@@ -26,37 +27,42 @@ layout(std430, binding = 0) buffer hbuf
     float heightMap[];
 };
 
-layout(std430, binding = 1) buffer wbuf
+layout(std430, binding = 1) readonly buffer tbuf
+{
+    float terrainMap[];
+};
+
+layout(std430, binding = 2) buffer wbuf
 {
     FHydFloatCombiner waterMap[];
 };
 
-layout(std430, binding = 2) buffer sbuf
+layout(std430, binding = 3) buffer sbuf
 {
     FHydFloatCombiner sedimentMap[];
 };
 
-layout(std430, binding = 3) buffer waterlv
+layout(std430, binding = 4) buffer waterlv
 {
    float waterLevel[];
 };
 
-layout(std430, binding = 4) buffer sedlv
+layout(std430, binding = 5) buffer sedlv
 {
    float sedimentLevel[];
 };
 
-layout(std430, binding = 5) buffer delaywaterlv
+layout(std430, binding = 6) buffer delaywaterlv
 {
    float delayedWaterLevel[];
 };
 
-layout(std430, binding = 6) buffer delaysedlv
+layout(std430, binding = 7) buffer delaysedlv
 {
    float delayedSedimentLevel[];
 };
 
-layout(std430, binding = 7) readonly buffer info
+layout(std430, binding = 8) readonly buffer info
 {
    InfoBuffer shaderInfo;
 };
@@ -120,7 +126,8 @@ void main()
 
     float sedCapacity = shaderInfo.fSedimentCapacity * waterLevel[gIdx];
 
-    float sedimentMoving = (abs(delayedWaterLevel[gIdx]) >= 0.000000125f) ? shaderInfo.fSoilSoftness * (1.f - pow(heightMap[gIdx],2)) * (sedCapacity - sedimentLevel[gIdx]) : 0;
+    //float sedimentMoving = (abs(delayedWaterLevel[gIdx]) >= 0.000000125f) ? shaderInfo.fSoilSoftness * (1.f - pow(heightMap[gIdx],2)) * (sedCapacity - sedimentLevel[gIdx]) : 0;
+    float sedimentMoving = (abs(delayedWaterLevel[gIdx]) >= 0.000000125f) ? (terrainMap[gIdx]) * (sedCapacity - sedimentLevel[gIdx]) : 0;
     sedimentMoving = sedimentLevel[gIdx] >= sedCapacity ? shaderInfo.fDepositionRate * (sedimentLevel[gIdx] - sedCapacity) * -1.f : sedimentMoving;
 
     float waterDelta = (shaderInfo.fWaterLevel - (waterLevel[gIdx] + heightMap[gIdx]));

@@ -508,7 +508,7 @@ void CGPUHydraulicErosion::CreateShaderModules(std::filesystem::path shaderPath)
 void CGPUHydraulicErosion::CreateDescSetLayout()
 {
 	// Create the common Descriptor Set for this codebase
-	VkDescriptorSetLayoutBinding descLayout[8] =
+	VkDescriptorSetLayoutBinding descLayout[9] =
 		{
 			{0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_COMPUTE_BIT, 0},
 			{1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_COMPUTE_BIT, 0},
@@ -517,12 +517,14 @@ void CGPUHydraulicErosion::CreateDescSetLayout()
 			{4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_COMPUTE_BIT, 0},
 			{5, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_COMPUTE_BIT, 0},
 			{6, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_COMPUTE_BIT, 0},
-			{7, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_COMPUTE_BIT, 0}};
+			{7, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_COMPUTE_BIT, 0},
+			{8, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_COMPUTE_BIT, 0}
+		};
 
 	VkDescriptorSetLayoutCreateInfo descLayoutInfo =
 		{
 			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-			0, 0, 8, descLayout};
+			0, 0, 9, descLayout};
 
 	VK_CHECK_RESULT(vkCreateDescriptorSetLayout(m_vkDevice, &descLayoutInfo, 0, &m_vkDescriptorSetLayout));
 }
@@ -569,7 +571,7 @@ void CGPUHydraulicErosion::CreateDescSet()
 {
 	VkDescriptorPoolSize descriptorPoolSize = {
 		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-		8};
+		9};
 
 	VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {
 		VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
@@ -737,11 +739,131 @@ void CGPUHydraulicErosion::VkZeroMemory(FDeviceBackedBuffer &stBuffer)
 	DeleteBuffer(StageBuffer);
 }
 
+void CGPUHydraulicErosion::UpdateDescriptorSets(uint32_t uDescCount, FDeviceBackedBuffer** ppElements)
+{
+	std::vector<VkDescriptorBufferInfo> bufInfos;
+	bufInfos.resize(uDescCount);
+
+	for(uint32_t i = 0; i < uDescCount; ++i)
+	{
+		bufInfos[i] = VkDescriptorBufferInfo{ppElements[i]->vkBuffer, 0, VK_WHOLE_SIZE};
+	}
+
+	// VkDescriptorBufferInfo hmapDescriptorBufferInfo = {
+	// 	heightMap.vkBuffer,
+	// 	0,
+	// 	VK_WHOLE_SIZE};
+
+	std::vector<VkWriteDescriptorSet> descInfos;
+	descInfos.resize(uDescCount);
+
+	for(uint32_t i = 0; i < uDescCount; ++i)
+	{
+		descInfos[i] = VkWriteDescriptorSet{
+			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+		 	0,
+			m_vkDescriptorSet,
+			i,
+			0,
+			1,
+			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+			0,
+			&bufInfos[i],
+			0
+		};
+	}
+
+	// VkWriteDescriptorSet writeDescriptorSet[8] = {
+	// 	{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+	// 	 0,
+	// 	 m_vkDescriptorSet,
+	// 	 0,
+	// 	 0,
+	// 	 1,
+	// 	 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+	// 	 0,
+	// 	 &hmapDescriptorBufferInfo,
+	// 	 0},
+	// 	{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+	// 	 0,
+	// 	 m_vkDescriptorSet,
+	// 	 2,
+	// 	 0,
+	// 	 1,
+	// 	 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+	// 	 0,
+	// 	 &waterMapDescriptorBufferInfo,
+	// 	 0},
+	// 	{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+	// 	 0,
+	// 	 m_vkDescriptorSet,
+	// 	 3,
+	// 	 0,
+	// 	 1,
+	// 	 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+	// 	 0,
+	// 	 &sedimentMapDescriptorBufferInfo,
+	// 	 0},
+	// 	{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+	// 	 0,
+	// 	 m_vkDescriptorSet,
+	// 	 4,
+	// 	 0,
+	// 	 1,
+	// 	 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+	// 	 0,
+	// 	 &waterLevelDescriptorBufferInfo,
+	// 	 0},
+	// 	{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+	// 	 0,
+	// 	 m_vkDescriptorSet,
+	// 	 5,
+	// 	 0,
+	// 	 1,
+	// 	 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+	// 	 0,
+	// 	 &sedimentLevelDescriptorBufferInfo,
+	// 	 0},
+	// 	{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+	// 	 0,
+	// 	 m_vkDescriptorSet,
+	// 	 6,
+	// 	 0,
+	// 	 1,
+	// 	 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+	// 	 0,
+	// 	 &delayedWaterLevelDescriptorBufferInfo,
+	// 	 0},
+	// 	{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+	// 	 0,
+	// 	 m_vkDescriptorSet,
+	// 	 7,
+	// 	 0,
+	// 	 1,
+	// 	 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+	// 	 0,
+	// 	 &delayedSedimentLevelDescriptorBufferInfo,
+	// 	 0},
+	// 	{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+	// 	 0,
+	// 	 m_vkDescriptorSet,
+	// 	 8,
+	// 	 0,
+	// 	 1,
+	// 	 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+	// 	 0,
+	// 	 &invokeInfoDescriptorBufferInfo,
+	// 	 0}};
+
+	vkUpdateDescriptorSets(m_vkDevice, uDescCount, descInfos.data(), 0, 0);
+}
+
 // This function may a monolith
-void CGPUHydraulicErosion::Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t uHeight, uint32_t uWidth, uint32_t uSteps, float fScale)
+void CGPUHydraulicErosion::Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t uHeight, uint32_t uWidth, uint32_t uSteps, FLOAT_TYPE *pTerrain, float fScale)
 {
 	// Create In and Out Buffers
 	FDeviceBackedBuffer heightMap{};
+	FDeviceBackedBuffer terrainMap{};
 	FDeviceBackedBuffer waterMap{};
 	FDeviceBackedBuffer sedimentMap{};
 	FDeviceBackedBuffer waterLevel{};
@@ -760,9 +882,21 @@ void CGPUHydraulicErosion::Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
 	cpuSideInfo.fDepositionRate = 0.3f / 10;
 	cpuSideInfo.fRainCoeff = 0.0125f;
 	cpuSideInfo.fWaterLevel = m_fWaterLevel;
+	cpuSideInfo.bClearTerrain = false;
 
 	CreateBuffer(heightMap, uWidth * uHeight * sizeof(FLOAT_TYPE), EGPUBufferTypes::COPY_BOTH);
 	VkMemcpy(heightMap, pHeight, uWidth * uHeight * sizeof(FLOAT_TYPE));
+
+	if(pTerrain)
+	{
+		CreateBuffer(terrainMap, uWidth * uHeight * sizeof(FLOAT_TYPE), EGPUBufferTypes::COPY_DEST);
+		VkMemcpy(terrainMap, pTerrain, uWidth * uHeight * sizeof(FLOAT_TYPE));
+	}
+	else
+	{
+		CreateBuffer(terrainMap, uWidth * uHeight * sizeof(FLOAT_TYPE), EGPUBufferTypes::GPU_ONLY);
+		cpuSideInfo.bClearTerrain = true;
+	}
 
 	CreateBuffer(invokeInfo, sizeof(FShaderInfo), EGPUBufferTypes::COPY_DEST);
 	VkMemcpy(invokeInfo, &cpuSideInfo, sizeof(FShaderInfo));
@@ -772,10 +906,9 @@ void CGPUHydraulicErosion::Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
 	CreateBuffer(waterLevel, uWidth * uHeight * sizeof(FLOAT_TYPE), EGPUBufferTypes::GPU_ONLY);
 	CreateBuffer(sedimentLevel, uWidth * uHeight * sizeof(FLOAT_TYPE), EGPUBufferTypes::GPU_ONLY);
 	CreateBuffer(delayedWaterLevel, uWidth * uHeight * sizeof(FLOAT_TYPE), EGPUBufferTypes::GPU_ONLY);
-	CreateBuffer(delayedSedimentLevel, uWidth * uHeight * sizeof(FLOAT_TYPE), EGPUBufferTypes::GPU_ONLY);
-	
+	CreateBuffer(delayedSedimentLevel, uWidth * uHeight * sizeof(FLOAT_TYPE), EGPUBufferTypes::GPU_ONLY);	
 
-	// printf("Zeroing Arrays... ");
+	//printf("Zeroing Arrays... ");
 	// VkZeroMemory(waterMap);
 	// VkZeroMemory(sedimentMap);
 	// VkZeroMemory(waterLevel);
@@ -785,129 +918,20 @@ void CGPUHydraulicErosion::Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
 	// printf("\rZeroing Arrays. Done.\n");
 
 	// Desc Pools
-	VkDescriptorBufferInfo hmapDescriptorBufferInfo = {
-		heightMap.vkBuffer,
-		0,
-		VK_WHOLE_SIZE};
+	FDeviceBackedBuffer* bufList[9] =
+	{
+		&heightMap,
+		&terrainMap,
+		&waterMap,
+		&sedimentMap,
+		&waterLevel,
+		&sedimentLevel,
+		&delayedWaterLevel,
+		&delayedSedimentLevel,
+		&invokeInfo
+	};
 
-	VkDescriptorBufferInfo invokeInfoDescriptorBufferInfo = {
-		invokeInfo.vkBuffer,
-		0,
-		VK_WHOLE_SIZE};
-
-	VkDescriptorBufferInfo waterMapDescriptorBufferInfo = {
-		waterMap.vkBuffer,
-		0,
-		VK_WHOLE_SIZE};
-
-	VkDescriptorBufferInfo sedimentMapDescriptorBufferInfo = {
-		sedimentMap.vkBuffer,
-		0,
-		VK_WHOLE_SIZE};
-
-	VkDescriptorBufferInfo waterLevelDescriptorBufferInfo = {
-		waterLevel.vkBuffer,
-		0,
-		VK_WHOLE_SIZE};
-
-	VkDescriptorBufferInfo sedimentLevelDescriptorBufferInfo = {
-		sedimentLevel.vkBuffer,
-		0,
-		VK_WHOLE_SIZE};
-
-	VkDescriptorBufferInfo delayedWaterLevelDescriptorBufferInfo = {
-		delayedWaterLevel.vkBuffer,
-		0,
-		VK_WHOLE_SIZE};
-
-	VkDescriptorBufferInfo delayedSedimentLevelDescriptorBufferInfo = {
-		delayedSedimentLevel.vkBuffer,
-		0,
-		VK_WHOLE_SIZE};
-
-	VkWriteDescriptorSet writeDescriptorSet[8] = {
-		{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-		 0,
-		 m_vkDescriptorSet,
-		 0,
-		 0,
-		 1,
-		 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-		 0,
-		 &hmapDescriptorBufferInfo,
-		 0},
-		{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-		 0,
-		 m_vkDescriptorSet,
-		 1,
-		 0,
-		 1,
-		 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-		 0,
-		 &waterMapDescriptorBufferInfo,
-		 0},
-		{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-		 0,
-		 m_vkDescriptorSet,
-		 2,
-		 0,
-		 1,
-		 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-		 0,
-		 &sedimentMapDescriptorBufferInfo,
-		 0},
-		{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-		 0,
-		 m_vkDescriptorSet,
-		 3,
-		 0,
-		 1,
-		 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-		 0,
-		 &waterLevelDescriptorBufferInfo,
-		 0},
-		{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-		 0,
-		 m_vkDescriptorSet,
-		 4,
-		 0,
-		 1,
-		 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-		 0,
-		 &sedimentLevelDescriptorBufferInfo,
-		 0},
-		{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-		 0,
-		 m_vkDescriptorSet,
-		 5,
-		 0,
-		 1,
-		 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-		 0,
-		 &delayedWaterLevelDescriptorBufferInfo,
-		 0},
-		{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-		 0,
-		 m_vkDescriptorSet,
-		 6,
-		 0,
-		 1,
-		 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-		 0,
-		 &delayedSedimentLevelDescriptorBufferInfo,
-		 0},
-		{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-		 0,
-		 m_vkDescriptorSet,
-		 7,
-		 0,
-		 1,
-		 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-		 0,
-		 &invokeInfoDescriptorBufferInfo,
-		 0}};
-
-	vkUpdateDescriptorSets(m_vkDevice, 8, writeDescriptorSet, 0, 0);
+	UpdateDescriptorSets(9, bufList);
 
 	uint32_t safeHeight = ((uHeight - 1) / 32) + 1;
 	uint32_t safeWidth = ((uWidth - 1) / 32) + 1;

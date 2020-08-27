@@ -48,9 +48,9 @@ void TerrainEngine::CTerrainEngine::Render()
 ////// ////// //////
 // Generation
 //
-void TerrainEngine::CTerrainEngine::Erode(uint32_t uLayerIndex, uint32_t uSteps, uint32_t uFilterSize)
+void TerrainEngine::CTerrainEngine::Erode(uint32_t uLayerIndex, uint32_t uSteps, uint32_t uTerrainLayerIndex, uint32_t uFilterSize)
 {
-    Super->Erode(uLayerIndex, uSteps, uFilterSize);
+    Super->Erode(uLayerIndex, uSteps, uTerrainLayerIndex, uFilterSize);
 }
 
 void TerrainEngine::CTerrainEngine::ErodeByNormals(uint32_t uLayerIndex, uint32_t uSteps)

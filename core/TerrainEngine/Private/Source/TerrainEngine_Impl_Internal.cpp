@@ -57,7 +57,7 @@ void CTerrainEngine_Impl::Internal_LazyEvaluate(FOperation &stOp)
         AutoCase(DestroyLayer, stOp.u32Arg1);
 
         AutoCase(Perlin, stOp.u32Arg1, *reinterpret_cast<float*>(&stOp.u32Arg2));
-        AutoCase(Erode, stOp.u32Arg1, stOp.u32Arg2, stOp.u32Arg3);
+        AutoCase(Erode, stOp.u32Arg1, stOp.u32Arg2, stOp.u32Arg3, stOp.u32Arg4);
         AutoCase(ErodeByNormals, stOp.u32Arg1, stOp.u32Arg2);
 
         
@@ -118,9 +118,19 @@ CHydraulicErosion* CTerrainEngine_Impl::Internal_GetBestEroder(uint32_t uFilterS
 ////// ////// //////
 // Private Generation
 //
-void CTerrainEngine_Impl::Internal_Erode(uint32_t uLayerIndex, uint32_t uSteps, uint32_t uFilterSize)
+void CTerrainEngine_Impl::Internal_Erode(uint32_t uLayerIndex, uint32_t uSteps, uint32_t uTerrainLayerIndex, uint32_t uFilterSize)
 {
     uFilterSize = uFilterSize ? uFilterSize : m_uFilterSize;
+
+    FLOAT_TYPE *tVecData = nullptr;
+
+    // Check Terrain Index
+    if(Internal_IsIndexSafe(uTerrainLayerIndex))
+    {
+        auto tVec = this->m_vpvData[uTerrainLayerIndex];
+        tVecData = GetInner(tVec);
+    }
+    
 
     auto iVec = this->m_vpvData[uLayerIndex];
     //auto oVec = std::make_shared<std::vector<FLOAT_TYPE>>(std::vector<FLOAT_TYPE>(m_uHeight * m_uWidth));
@@ -137,6 +147,7 @@ void CTerrainEngine_Impl::Internal_Erode(uint32_t uLayerIndex, uint32_t uSteps, 
         m_uHeight,
         m_uWidth,
         uSteps,
+        tVecData,
         0.1f
     );
 
