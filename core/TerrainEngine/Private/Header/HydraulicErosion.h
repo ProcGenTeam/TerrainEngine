@@ -84,7 +84,7 @@ class CHydraulicErosion
 
     public:
         CHydraulicErosion(int32_t iOverscan, uint32_t uSeed, int32_t iOffsetX, int32_t iOffsetY, FLOAT_TYPE fWaterLevel = 0.1f);
-        ~CHydraulicErosion();
+        virtual ~CHydraulicErosion();
 
         virtual void TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t uHeight, uint32_t uWidth, float fScale = 0.1f);
 

@@ -1,5 +1,6 @@
 #version 450
 //#extension GL_ARB_seperate_shader_objects : enable
+#extension GL_EXT_control_flow_attributes : enable
 
 layout (local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 
@@ -9,8 +10,9 @@ struct InfoBuffer
     uint uHeight;
     float fEvaporationRate;
     float fDepositionRate;
-    float fSoftness;
+    float fSoilSoftness;
     float fRainCoeff;
+    float fSedimentCapacity;
 };
 
 struct FHydFloatCombiner
@@ -18,37 +20,37 @@ struct FHydFloatCombiner
     float values[8];
 };
 
-layout(std430, binding = 0) buffer hbuf
+layout(std430, binding = 0) readonly buffer hbuf
 {
     float heightMap[];
 };
 
-layout(std430, binding = 1) buffer wbuf
+layout(std430, binding = 1) writeonly buffer wbuf
 {
     FHydFloatCombiner waterMap[];
 };
 
-layout(std430, binding = 2) buffer sbuf
+layout(std430, binding = 2) writeonly buffer sbuf
 {
     FHydFloatCombiner sedimentMap[];
 };
 
-layout(std430, binding = 3) buffer waterlv
+layout(std430, binding = 3) writeonly buffer waterlv
 {
    float waterLevel[];
 };
 
-layout(std430, binding = 4) buffer sedlv
+layout(std430, binding = 4) writeonly buffer sedlv
 {
    float sedimentLevel[];
 };
 
-layout(std430, binding = 5) buffer delaywaterlv
+layout(std430, binding = 5) writeonly buffer delaywaterlv
 {
    float delayedWaterLevel[];
 };
 
-layout(std430, binding = 6) buffer delaysedlv
+layout(std430, binding = 6) writeonly buffer delaysedlv
 {
    float delayedSedimentLevel[];
 };
@@ -58,8 +60,9 @@ layout(std430, binding = 7) readonly buffer info
    InfoBuffer shaderInfo;
 };
 
+
 /**
- * Last Pass
+ * First Pass
  */
 void main()
 {
@@ -70,5 +73,18 @@ void main()
 
     uint gIdx = gl_GlobalInvocationID.y * shaderInfo.uWidth + gl_GlobalInvocationID.x;
 
-    heightMap[gIdx] = heightMap[gIdx] + sedimentLevel[gIdx];
+    waterLevel[gIdx] = 0;
+    sedimentLevel[gIdx] = 0;
+    delayedWaterLevel[gIdx] = 0;
+    delayedSedimentLevel[gIdx] = 0;
+
+    [[unroll]]
+    for(uint n = 0; n < 8; ++n)
+    {
+        waterMap[gIdx].values[n] = 0;
+        sedimentMap[gIdx].values[n] = 0;
+    }
+
+    
+    
 }

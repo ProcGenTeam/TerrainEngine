@@ -6,6 +6,7 @@ glslangValidator -V110 ./core/TerrainEngine/Private/Shader/Rain.comp -o build/Ra
 glslangValidator -V110 ./core/TerrainEngine/Private/Shader/Erode.comp -o build/Erode.spv
 glslangValidator -V110 ./core/TerrainEngine/Private/Shader/DumpSediment.comp -o build/Dump.spv
 glslangValidator -V110 ./core/TerrainEngine/Private/Shader/Combine.comp -o build/Combine.spv
+glslangValidator -V110 ./core/TerrainEngine/Private/Shader/Zero.comp -o build/Zero.spv
 
 find ./build -name "*.spv" -exec spirv-opt -O {} -o {} \;
 

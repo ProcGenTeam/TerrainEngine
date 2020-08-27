@@ -47,6 +47,7 @@ CGPUHydraulicErosion::CGPUHydraulicErosion(int32_t iOverscan, uint32_t uSeed, in
 	CreateShaderModules("Combine.spv");
 	CreateShaderModules("Rain.spv");
 	CreateShaderModules("Dump.spv");
+	CreateShaderModules("Zero.spv");
 	//printf("Creating Desc Set Layout\n");
 	CreateDescSetLayout();
 	//printf("Creating Pipe\n");
@@ -59,6 +60,24 @@ CGPUHydraulicErosion::CGPUHydraulicErosion(int32_t iOverscan, uint32_t uSeed, in
 
 CGPUHydraulicErosion::~CGPUHydraulicErosion()
 {
+	vkFreeCommandBuffers(m_vkDevice, m_vkCommandPool, 1, &m_vkCommandBuffer);
+
+	for(auto pipe : m_vPipelines)
+	{
+		vkDestroyPipeline(m_vkDevice, pipe.vkPipeline, NULL);
+		vkDestroyPipelineLayout(m_vkDevice, pipe.vkPipelineLayout, NULL);
+	}
+
+	vkDestroyDescriptorPool(m_vkDevice, m_vkDescriptorPool, NULL);
+	vkDestroyDescriptorSetLayout(m_vkDevice, m_vkDescriptorSetLayout, NULL);
+	vkDestroyCommandPool(m_vkDevice, m_vkCommandPool, NULL);
+	
+
+	for(auto shader : m_vShaders)
+	{
+		vkDestroyShaderModule(m_vkDevice, shader.vkShaderModule, NULL);
+	}
+
 	vkDestroyDevice(m_vkDevice, NULL);
 	vkDestroyInstance(m_vkInstance, NULL);
 }
@@ -732,15 +751,7 @@ void CGPUHydraulicErosion::Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
 	FDeviceBackedBuffer delayedSedimentLevel{};
 	FDeviceBackedBuffer invokeInfo{};
 
-	CreateBuffer(heightMap, uWidth * uHeight * sizeof(FLOAT_TYPE), EGPUBufferTypes::COPY_BOTH);
-	CreateBuffer(waterMap, uWidth * uHeight * sizeof(FLOAT_TYPE) * 8, EGPUBufferTypes::COPY_DEST);
-	CreateBuffer(sedimentMap, uWidth * uHeight * sizeof(FLOAT_TYPE) * 8, EGPUBufferTypes::COPY_DEST);
-	CreateBuffer(waterLevel, uWidth * uHeight * sizeof(FLOAT_TYPE), EGPUBufferTypes::COPY_DEST);
-	CreateBuffer(sedimentLevel, uWidth * uHeight * sizeof(FLOAT_TYPE), EGPUBufferTypes::COPY_DEST);
-	CreateBuffer(delayedWaterLevel, uWidth * uHeight * sizeof(FLOAT_TYPE), EGPUBufferTypes::COPY_DEST);
-	CreateBuffer(delayedSedimentLevel, uWidth * uHeight * sizeof(FLOAT_TYPE), EGPUBufferTypes::COPY_DEST);
-	CreateBuffer(invokeInfo, sizeof(FShaderInfo), EGPUBufferTypes::COPY_DEST);
-
+	// Create Heightmap and copy!
 	FShaderInfo cpuSideInfo{};
 	cpuSideInfo.uWidth = uWidth;
 	cpuSideInfo.uHeight = uHeight;
@@ -750,20 +761,28 @@ void CGPUHydraulicErosion::Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
 	cpuSideInfo.fDepositionRate = 0.3f / 10;
 	cpuSideInfo.fRainCoeff = 0.0125f;
 
-	// Copy Memory
-	printf("Host to Device Copy...");
+	CreateBuffer(heightMap, uWidth * uHeight * sizeof(FLOAT_TYPE), EGPUBufferTypes::COPY_BOTH);
 	VkMemcpy(heightMap, pHeight, uWidth * uHeight * sizeof(FLOAT_TYPE));
-	VkMemcpy(invokeInfo, &cpuSideInfo, sizeof(FShaderInfo));
-	printf("\rHost to Device Copy. Done.\n");
 
-	printf("Zeroing Arrays... ");
-	VkZeroMemory(waterMap);
-	VkZeroMemory(sedimentMap);
-	VkZeroMemory(waterLevel);
-	VkZeroMemory(sedimentLevel);
-	VkZeroMemory(delayedWaterLevel);
-	VkZeroMemory(delayedSedimentLevel);
-	printf("\rZeroing Arrays. Done.\n");
+	CreateBuffer(invokeInfo, sizeof(FShaderInfo), EGPUBufferTypes::COPY_DEST);
+	VkMemcpy(invokeInfo, &cpuSideInfo, sizeof(FShaderInfo));
+
+	CreateBuffer(waterMap, uWidth * uHeight * sizeof(FLOAT_TYPE) * 8, EGPUBufferTypes::GPU_ONLY);
+	CreateBuffer(sedimentMap, uWidth * uHeight * sizeof(FLOAT_TYPE) * 8, EGPUBufferTypes::GPU_ONLY);
+	CreateBuffer(waterLevel, uWidth * uHeight * sizeof(FLOAT_TYPE), EGPUBufferTypes::GPU_ONLY);
+	CreateBuffer(sedimentLevel, uWidth * uHeight * sizeof(FLOAT_TYPE), EGPUBufferTypes::GPU_ONLY);
+	CreateBuffer(delayedWaterLevel, uWidth * uHeight * sizeof(FLOAT_TYPE), EGPUBufferTypes::GPU_ONLY);
+	CreateBuffer(delayedSedimentLevel, uWidth * uHeight * sizeof(FLOAT_TYPE), EGPUBufferTypes::GPU_ONLY);
+	
+
+	// printf("Zeroing Arrays... ");
+	// VkZeroMemory(waterMap);
+	// VkZeroMemory(sedimentMap);
+	// VkZeroMemory(waterLevel);
+	// VkZeroMemory(sedimentLevel);
+	// VkZeroMemory(delayedWaterLevel);
+	// VkZeroMemory(delayedSedimentLevel);
+	// printf("\rZeroing Arrays. Done.\n");
 
 	// Desc Pools
 	VkDescriptorBufferInfo hmapDescriptorBufferInfo = {
@@ -890,29 +909,24 @@ void CGPUHydraulicErosion::Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
 
 	vkUpdateDescriptorSets(m_vkDevice, 8, writeDescriptorSet, 0, 0);
 
-	uint32_t safeHeight = ((uHeight - 1) / 16) + 1;
-	uint32_t safeWidth = ((uWidth - 1) / 16) + 1;
+	uint32_t safeHeight = ((uHeight - 1) / 32) + 1;
+	uint32_t safeWidth = ((uWidth - 1) / 32) + 1;
 
-
-
-	// // Process Rain Once :)
+	// commandBuffer info
 	VkCommandBufferBeginInfo commandBufferBeginInfo = {
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		0,
 		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
 		0};
 
+
+
+	// Zero GPU arrays on the GPU to avoid memory use
 	VK_CHECK_RESULT(vkBeginCommandBuffer(m_vkCommandBuffer, &commandBufferBeginInfo));
-
-	vkCmdBindPipeline(m_vkCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_vPipelines[2].vkPipeline);
-
+	vkCmdBindPipeline(m_vkCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_vPipelines[4].vkPipeline);
 	vkCmdBindDescriptorSets(m_vkCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE,
-							m_vPipelines[2].vkPipelineLayout, 0, 1, &m_vkDescriptorSet, 0, 0);
-
-	// This may be changed for speed!
+							m_vPipelines[4].vkPipelineLayout, 0, 1, &m_vkDescriptorSet, 0, 0);
 	vkCmdDispatch(m_vkCommandBuffer, safeWidth, safeHeight, 1);
-	
-
 	VK_CHECK_RESULT(vkEndCommandBuffer(m_vkCommandBuffer));
 
 	VkSubmitInfo submitInfo =
@@ -932,6 +946,25 @@ void CGPUHydraulicErosion::Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
 	VK_CHECK_RESULT(vkQueueWaitIdle(m_vkQueue));
 	VK_CHECK_RESULT(vkResetCommandBuffer(m_vkCommandBuffer, 0));
 
+
+
+
+
+	// // Process Rain Once :)
+	VK_CHECK_RESULT(vkBeginCommandBuffer(m_vkCommandBuffer, &commandBufferBeginInfo));
+	vkCmdBindPipeline(m_vkCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_vPipelines[2].vkPipeline);
+	vkCmdBindDescriptorSets(m_vkCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE,
+							m_vPipelines[2].vkPipelineLayout, 0, 1, &m_vkDescriptorSet, 0, 0);
+	vkCmdDispatch(m_vkCommandBuffer, safeWidth, safeHeight, 1);
+	VK_CHECK_RESULT(vkEndCommandBuffer(m_vkCommandBuffer));
+
+	VK_CHECK_RESULT(vkQueueSubmit(m_vkQueue, 1, &submitInfo, 0));
+	VK_CHECK_RESULT(vkQueueWaitIdle(m_vkQueue));
+	VK_CHECK_RESULT(vkResetCommandBuffer(m_vkCommandBuffer, 0));
+
+
+
+
 	uint32_t uSteps = 1500;
 
 	for(uint32_t s = 0; s < uSteps; ++s)
@@ -948,11 +981,11 @@ void CGPUHydraulicErosion::Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
 		{
 			//printf("Applying Shader %d\n", i);
 			// Process :)
-			VkCommandBufferBeginInfo commandBufferBeginInfo = {
-				VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-				0,
-				VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-				0};
+			// VkCommandBufferBeginInfo commandBufferBeginInfo = {
+			// 	VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+			// 	0,
+			// 	VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+			// 	0};
 
 			VK_CHECK_RESULT(vkBeginCommandBuffer(m_vkCommandBuffer, &commandBufferBeginInfo));
 
@@ -967,18 +1000,18 @@ void CGPUHydraulicErosion::Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
 
 			VK_CHECK_RESULT(vkEndCommandBuffer(m_vkCommandBuffer));
 
-			VkSubmitInfo submitInfo =
-				{
-					VK_STRUCTURE_TYPE_SUBMIT_INFO,
-					0,
-					0,
-					0,
-					0,
-					1,
-					&m_vkCommandBuffer,
-					0,
-					0
-				};
+			// VkSubmitInfo submitInfo =
+			// 	{
+			// 		VK_STRUCTURE_TYPE_SUBMIT_INFO,
+			// 		0,
+			// 		0,
+			// 		0,
+			// 		0,
+			// 		1,
+			// 		&m_vkCommandBuffer,
+			// 		0,
+			// 		0
+			// 	};
 
 			VK_CHECK_RESULT(vkQueueSubmit(m_vkQueue, 1, &submitInfo, 0));
 			VK_CHECK_RESULT(vkQueueWaitIdle(m_vkQueue));
