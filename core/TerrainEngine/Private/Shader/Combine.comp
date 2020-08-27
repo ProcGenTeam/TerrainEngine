@@ -13,6 +13,7 @@ struct InfoBuffer
     float fSoilSoftness;
     float fRainCoeff;
     float fSedimentCapacity;
+    float fWaterLevel;
 };
 
 struct FHydFloatCombiner
@@ -102,6 +103,9 @@ void main()
         sedimentMap[gIdx].values[sp] = 0;
     }
 
+    // Disable Sediment Pickup
+    delayedWaterLevel[gIdx] *= shaderInfo.fWaterLevel > heightMap[gIdx] ? 0.f : 1.f;
+
     // Deposit!
     heightMap[gIdx] += shaderInfo.fDepositionRate * sedimentLevel[gIdx];
     sedimentLevel[gIdx] -= shaderInfo.fDepositionRate * sedimentLevel[gIdx];
@@ -111,7 +115,6 @@ void main()
     waterLevel[gIdx] -= evaporationLevel;
 
     if(waterLevel[gIdx] < 0.00000625f) { waterLevel[gIdx] = 0; }
-
     waterLevel[gIdx] = max(waterLevel[gIdx], 0.f);
     sedimentLevel[gIdx] = max(sedimentLevel[gIdx], 0.f);
 
@@ -119,6 +122,9 @@ void main()
 
     float sedimentMoving = (abs(delayedWaterLevel[gIdx]) >= 0.000000125f) ? shaderInfo.fSoilSoftness * (1.f - pow(heightMap[gIdx],2)) * (sedCapacity - sedimentLevel[gIdx]) : 0;
     sedimentMoving = sedimentLevel[gIdx] >= sedCapacity ? shaderInfo.fDepositionRate * (sedimentLevel[gIdx] - sedCapacity) * -1.f : sedimentMoving;
+
+    float waterDelta = (shaderInfo.fWaterLevel - (waterLevel[gIdx] + heightMap[gIdx]));
+    waterLevel[gIdx] += waterDelta < 0 ? 0 : waterDelta;
 
     sedimentLevel[gIdx] += sedimentMoving;
     heightMap[gIdx] -= sedimentMoving;

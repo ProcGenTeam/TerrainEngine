@@ -12,6 +12,7 @@ struct InfoBuffer
     float fSoilSoftness;
     float fRainCoeff;
     float fSedimentCapacity;
+    float fWaterLevel;
 };
 
 struct FHydFloatCombiner
@@ -71,7 +72,9 @@ void main()
     }
 
     uint gIdx = gl_GlobalInvocationID.y * shaderInfo.uWidth + gl_GlobalInvocationID.x;
+
     waterLevel[gIdx] += shaderInfo.fRainCoeff * pow(heightMap[gIdx], 1);
+
     //heightMap[gIdx] = waterLevel[gIdx]; //0.225f * pow(heightMap[gIdx], 6);
     
 }

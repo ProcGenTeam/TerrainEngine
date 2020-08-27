@@ -760,6 +760,7 @@ void CGPUHydraulicErosion::Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
 	cpuSideInfo.fEvaporationRate = 0.01f;
 	cpuSideInfo.fDepositionRate = 0.3f / 10;
 	cpuSideInfo.fRainCoeff = 0.0125f;
+	cpuSideInfo.fWaterLevel = m_fWaterLevel;
 
 	CreateBuffer(heightMap, uWidth * uHeight * sizeof(FLOAT_TYPE), EGPUBufferTypes::COPY_BOTH);
 	VkMemcpy(heightMap, pHeight, uWidth * uHeight * sizeof(FLOAT_TYPE));

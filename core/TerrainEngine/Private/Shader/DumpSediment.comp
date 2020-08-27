@@ -11,6 +11,7 @@ struct InfoBuffer
     float fDepositionRate;
     float fSoftness;
     float fRainCoeff;
+    float fWaterLevel;
 };
 
 struct FHydFloatCombiner

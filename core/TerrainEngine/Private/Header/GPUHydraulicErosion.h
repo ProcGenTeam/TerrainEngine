@@ -26,7 +26,7 @@ struct FShaderInfo
     float fSoilSoftness;
     float fRainCoeff;
     float fSedimentCapacity;
-    //float fWaterLevel;
+    float fWaterLevel;
 };
 
 struct FShaderBytecode
