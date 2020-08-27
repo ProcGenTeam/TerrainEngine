@@ -223,15 +223,15 @@ void CHydraulicErosion::ErodeByNormals(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, ui
     }
 }
 
-void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t uHeight, uint32_t uWidth, float fScale)
+void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t uHeight, uint32_t uWidth, uint32_t uStop, float fScale)
 {
     // Create Array. Let's use a *very* small step size to get some good performance
 #ifdef NDEBUG
     uint32_t uSteps = 65536;
-    uint32_t uStop = 500;
+    //uint32_t uStop = 500;
 #else
     uint32_t uSteps = 1024;
-    uint32_t uStop = 50;
+    //uint32_t uStop = 50;
 #endif
     //uSteps = 3000;
     //float fStep = 1.f / uSteps;
@@ -633,10 +633,10 @@ void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
     }
 }
 
-void CHydraulicErosion::Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t uHeight, uint32_t uWidth, float fScale)
+void CHydraulicErosion::Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t uHeight, uint32_t uWidth, uint32_t uSteps, float fScale)
 {
     // New Function, let's detour
-    TestFunc(pHeight, pOut, uHeight, uWidth, fScale);
+    TestFunc(pHeight, pOut, uHeight, uWidth, uSteps, fScale);
     fprintf(stderr, "Iteration Finished\n");
     
     return;

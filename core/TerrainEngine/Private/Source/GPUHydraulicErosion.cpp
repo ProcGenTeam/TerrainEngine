@@ -739,7 +739,7 @@ void CGPUHydraulicErosion::VkZeroMemory(FDeviceBackedBuffer &stBuffer)
 }
 
 // This function may a monolith
-void CGPUHydraulicErosion::Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t uHeight, uint32_t uWidth, float fScale)
+void CGPUHydraulicErosion::Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t uHeight, uint32_t uWidth, uint32_t uSteps, float fScale)
 {
 	// Create In and Out Buffers
 	FDeviceBackedBuffer heightMap{};
@@ -965,7 +965,7 @@ void CGPUHydraulicErosion::Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
 
 
 
-	uint32_t uSteps = 1500;
+	//uint32_t uSteps = 1500;
 
 	for(uint32_t s = 0; s < uSteps; ++s)
 	{
