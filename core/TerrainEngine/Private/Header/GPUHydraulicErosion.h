@@ -35,6 +35,16 @@ struct FShaderBytecode
     VkShaderModule vkShaderModule;
 };
 
+enum class EGPUBufferTypes: uint32_t
+{
+    GPU_ONLY,
+    COPY_SOURCE,
+    COPY_DEST,
+    COPY_BOTH,
+
+    TOTAL_BUFFER_TYPES
+};
+
 class CGPUHydraulicErosion : public CHydraulicErosion
 {
     private:
@@ -129,8 +139,8 @@ class CGPUHydraulicErosion : public CHydraulicErosion
         void CreateVKInstance();
         void CreateDevice();
         void CreatePhysicalDevice();
-        void CreateBuffer(FDeviceBackedBuffer &stBuffer, uint64_t uSize);
-        void CreateBuffer(FDeviceBackedBuffer &stBuffer, uint64_t uSize, uint64_t wantedFlags);
+        void CreateBuffer(FDeviceBackedBuffer &stBuffer, uint64_t uSize, EGPUBufferTypes eBufferType = EGPUBufferTypes::GPU_ONLY);
+        void CreateBuffer(FDeviceBackedBuffer &stBuffer, uint64_t uSize, uint64_t wantedFlags, EGPUBufferTypes eBufferType);
         void CreateShaderModules(std::filesystem::path shaderPath);
         void CreateDescSetLayout();
         void CreateDescSet();

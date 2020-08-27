@@ -353,12 +353,31 @@ void CGPUHydraulicErosion::CreateDevice()
 	vkGetDeviceQueue(m_vkDevice, queueFamilyIndex, 0, &m_vkQueue);
 }
 
-void CGPUHydraulicErosion::CreateBuffer(FDeviceBackedBuffer &stBuffer, uint64_t uSize, uint64_t wantedFlags)
+void CGPUHydraulicErosion::CreateBuffer(FDeviceBackedBuffer &stBuffer, uint64_t uSize, uint64_t wantedFlags, EGPUBufferTypes eBufferType)
 {
+	uint64_t usageFlags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+
+	switch(eBufferType)
+	{
+	case EGPUBufferTypes::GPU_ONLY:
+		break; // No extra flags
+	case EGPUBufferTypes::COPY_DEST:
+		usageFlags |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+		break;
+	case EGPUBufferTypes::COPY_SOURCE:
+		usageFlags |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+		break;
+	case EGPUBufferTypes::COPY_BOTH:
+		usageFlags |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+		break;
+	default:
+		break;
+	};
+
 	VkBufferCreateInfo bufferCreateInfo = {};
 	bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 	bufferCreateInfo.size = uSize;								 // buffer size in bytes.
-	bufferCreateInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT; // buffer is used as a storage buffer.
+	bufferCreateInfo.usage = usageFlags; // buffer is used as a storage buffer.
 	bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;	 // buffer is exclusive to a single queue family at a time.
 
 	VK_CHECK_RESULT(vkCreateBuffer(m_vkDevice, &bufferCreateInfo, NULL, &stBuffer.vkBuffer)); // create buffer.
@@ -418,10 +437,10 @@ void CGPUHydraulicErosion::CreateBuffer(FDeviceBackedBuffer &stBuffer, uint64_t 
 	stBuffer.uSize = uSize;
 }
 
-void CGPUHydraulicErosion::CreateBuffer(FDeviceBackedBuffer &stBuffer, uint64_t uSize)
+void CGPUHydraulicErosion::CreateBuffer(FDeviceBackedBuffer &stBuffer, uint64_t uSize, EGPUBufferTypes eBufferType)
 {
 	uint64_t wantedFlags = ( VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );//  | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-	CreateBuffer(stBuffer, uSize, wantedFlags);
+	CreateBuffer(stBuffer, uSize, wantedFlags, eBufferType);
 }
 
 void CGPUHydraulicErosion::CreateShaderModules(std::filesystem::path shaderPath)
@@ -584,7 +603,7 @@ void CGPUHydraulicErosion::VkMemcpy(void *cpuBuffer, FDeviceBackedBuffer &stBuff
 {
 	// Stage
 	FDeviceBackedBuffer StageBuffer{};
-	CreateBuffer(StageBuffer, stBuffer.uSize, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+	CreateBuffer(StageBuffer, stBuffer.uSize, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT), EGPUBufferTypes::COPY_DEST);
 
 	VkBufferCopy stageCopy
 	{
@@ -623,7 +642,7 @@ void CGPUHydraulicErosion::VkMemcpy(FDeviceBackedBuffer &stBuffer, void *cpuBuff
 {
 		// Stage
 	FDeviceBackedBuffer StageBuffer{};
-	CreateBuffer(StageBuffer, stBuffer.uSize, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+	CreateBuffer(StageBuffer, stBuffer.uSize, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT), EGPUBufferTypes::COPY_SOURCE);
 
 	void *hostPtr;
 	VK_CHECK_RESULT(vkMapMemory(m_vkDevice, StageBuffer.vkDeviceMemory, 0, StageBuffer.uSize, 0, &hostPtr));
@@ -664,7 +683,7 @@ void CGPUHydraulicErosion::VkZeroMemory(FDeviceBackedBuffer &stBuffer)
 {
 	// Stage
 	FDeviceBackedBuffer StageBuffer{};
-	CreateBuffer(StageBuffer, stBuffer.uSize, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+	CreateBuffer(StageBuffer, stBuffer.uSize, (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT), EGPUBufferTypes::COPY_SOURCE);
 
 	void *hostPtr;
 	VK_CHECK_RESULT(vkMapMemory(m_vkDevice, StageBuffer.vkDeviceMemory, 0, StageBuffer.uSize, 0, &hostPtr));
@@ -713,14 +732,14 @@ void CGPUHydraulicErosion::Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
 	FDeviceBackedBuffer delayedSedimentLevel{};
 	FDeviceBackedBuffer invokeInfo{};
 
-	CreateBuffer(heightMap, uWidth * uHeight * sizeof(FLOAT_TYPE));
-	CreateBuffer(waterMap, uWidth * uHeight * sizeof(FLOAT_TYPE) * 8);
-	CreateBuffer(sedimentMap, uWidth * uHeight * sizeof(FLOAT_TYPE) * 8);
-	CreateBuffer(waterLevel, uWidth * uHeight * sizeof(FLOAT_TYPE));
-	CreateBuffer(sedimentLevel, uWidth * uHeight * sizeof(FLOAT_TYPE));
-	CreateBuffer(delayedWaterLevel, uWidth * uHeight * sizeof(FLOAT_TYPE));
-	CreateBuffer(delayedSedimentLevel, uWidth * uHeight * sizeof(FLOAT_TYPE));
-	CreateBuffer(invokeInfo, sizeof(FShaderInfo));
+	CreateBuffer(heightMap, uWidth * uHeight * sizeof(FLOAT_TYPE), EGPUBufferTypes::COPY_BOTH);
+	CreateBuffer(waterMap, uWidth * uHeight * sizeof(FLOAT_TYPE) * 8, EGPUBufferTypes::COPY_DEST);
+	CreateBuffer(sedimentMap, uWidth * uHeight * sizeof(FLOAT_TYPE) * 8, EGPUBufferTypes::COPY_DEST);
+	CreateBuffer(waterLevel, uWidth * uHeight * sizeof(FLOAT_TYPE), EGPUBufferTypes::COPY_DEST);
+	CreateBuffer(sedimentLevel, uWidth * uHeight * sizeof(FLOAT_TYPE), EGPUBufferTypes::COPY_DEST);
+	CreateBuffer(delayedWaterLevel, uWidth * uHeight * sizeof(FLOAT_TYPE), EGPUBufferTypes::COPY_DEST);
+	CreateBuffer(delayedSedimentLevel, uWidth * uHeight * sizeof(FLOAT_TYPE), EGPUBufferTypes::COPY_DEST);
+	CreateBuffer(invokeInfo, sizeof(FShaderInfo), EGPUBufferTypes::COPY_DEST);
 
 	FShaderInfo cpuSideInfo{};
 	cpuSideInfo.uWidth = uWidth;
