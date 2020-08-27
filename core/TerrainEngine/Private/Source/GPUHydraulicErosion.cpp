@@ -77,7 +77,6 @@ CGPUHydraulicErosion::~CGPUHydraulicErosion()
 	{
 		vkDestroyShaderModule(m_vkDevice, shader.vkShaderModule, NULL);
 	}
-
 	vkDestroyDevice(m_vkDevice, NULL);
 	vkDestroyInstance(m_vkInstance, NULL);
 }
@@ -426,7 +425,6 @@ void CGPUHydraulicErosion::CreateBuffer(FDeviceBackedBuffer &stBuffer, uint64_t 
 
 	uint32_t memType = UINT32_MAX;
 	//uint64_t wantedFlags = (VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-	
 
 	VkPhysicalDeviceMemoryProperties memoryProperties;
 	vkGetPhysicalDeviceMemoryProperties(m_vkPhyDevice, &memoryProperties);
@@ -455,6 +453,7 @@ void CGPUHydraulicErosion::CreateBuffer(FDeviceBackedBuffer &stBuffer, uint64_t 
 
 	stBuffer.uSize = uSize;
 }
+
 
 void CGPUHydraulicErosion::CreateBuffer(FDeviceBackedBuffer &stBuffer, uint64_t uSize, EGPUBufferTypes eBufferType)
 {
