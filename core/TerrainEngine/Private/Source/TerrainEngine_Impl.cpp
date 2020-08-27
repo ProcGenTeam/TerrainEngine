@@ -128,7 +128,7 @@ void CTerrainEngine_Impl::Render()
 ////// ////// //////
 // Generation
 //
-void CTerrainEngine_Impl::Erode(uint32_t uLayerIndex, uint32_t uSteps, uint32_t uFilterSize)
+void CTerrainEngine_Impl::Erode(uint32_t uLayerIndex, uint32_t uSteps, uint32_t uTerrainLayerIndex, uint32_t uFilterSize)
 {
     // Memory
     Internal_TrackMemoryLoad(sizeof(FLOAT_TYPE) * m_uHeight * m_uWidth, EMemoryUseTypes::MethodMemory);
@@ -139,7 +139,7 @@ void CTerrainEngine_Impl::Erode(uint32_t uLayerIndex, uint32_t uSteps, uint32_t 
     // Memory use isn't overly useful here
     if(this->m_bImmediateMode)
     {
-        Internal_Erode(uLayerIndex, uSteps, uFilterSize);
+        Internal_Erode(uLayerIndex, uSteps, uTerrainLayerIndex, uFilterSize);
     }
     else
     {
@@ -147,7 +147,8 @@ void CTerrainEngine_Impl::Erode(uint32_t uLayerIndex, uint32_t uSteps, uint32_t 
         op.OpType = EOperationTypes::Erode;
         op.u32Arg1 = uLayerIndex;
         op.u32Arg2 = uSteps;
-        op.u32Arg3 = uFilterSize;
+        op.u32Arg3 = uTerrainLayerIndex;
+        op.u32Arg4 = uFilterSize;
         m_vQueue.push_back(std::move(op));
     }
 

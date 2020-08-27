@@ -223,7 +223,7 @@ void CHydraulicErosion::ErodeByNormals(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, ui
     }
 }
 
-void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t uHeight, uint32_t uWidth, uint32_t uStop, float fScale)
+void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t uHeight, uint32_t uWidth, uint32_t uStop, FLOAT_TYPE *pTerrain, float fScale)
 {
     // Create Array. Let's use a *very* small step size to get some good performance
 #ifdef NDEBUG
@@ -547,7 +547,8 @@ void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
 
                 //printf("%f\n", rngMod);
 
-                auto deltaS = m_fSoilSoftness * (1-std::pow(pHeight[x],2)) * (sedCapacity - m_vv4WaterMap[x].y);// * rngMod;
+                //auto deltaS = m_fSoilSoftness * pTerrain[x] * (1-std::pow(pHeight[x],2)) * (sedCapacity - m_vv4WaterMap[x].y);// * rngMod;
+                auto deltaS = m_fSoilSoftness * pTerrain[x] * (sedCapacity - m_vv4WaterMap[x].y);// * rngMod;
                 //deltaS = std::max(0.001f, sedCapacity);
                 m_vv4WaterMap[x].y += deltaS;
                 pHeight[x] -= deltaS;
@@ -633,10 +634,10 @@ void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
     }
 }
 
-void CHydraulicErosion::Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t uHeight, uint32_t uWidth, uint32_t uSteps, float fScale)
+void CHydraulicErosion::Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t uHeight, uint32_t uWidth, uint32_t uSteps, FLOAT_TYPE *pTerrain, float fScale)
 {
     // New Function, let's detour
-    TestFunc(pHeight, pOut, uHeight, uWidth, uSteps, fScale);
+    TestFunc(pHeight, pOut, uHeight, uWidth, uSteps, pTerrain, fScale);
     fprintf(stderr, "Iteration Finished\n");
     
     return;
