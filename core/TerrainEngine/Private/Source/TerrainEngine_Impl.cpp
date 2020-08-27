@@ -133,7 +133,7 @@ void CTerrainEngine_Impl::Erode(uint32_t uLayerIndex, uint32_t uSteps, uint32_t 
     // Memory
     Internal_TrackMemoryLoad(sizeof(FLOAT_TYPE) * m_uHeight * m_uWidth, EMemoryUseTypes::MethodMemory);
     Internal_TrackMemoryLoad(sizeof(glm::vec4) * m_uHeight * m_uWidth, EMemoryUseTypes::MethodMemory);
-    Internal_TrackMemoryLoad(sizeof(float) * 8 * m_uHeight * m_uWidth, EMemoryUseTypes::MethodMemory);
+    Internal_TrackMemoryLoad(sizeof(FLOAT_TYPE) * 16 * m_uHeight * m_uWidth, EMemoryUseTypes::MethodMemory);
     //Internal_TrackMemoryLoad(sizeof(glm::vec3) * m_uHeight * m_uWidth, EMemoryUseTypes::MethodMemory);
 
     // Memory use isn't overly useful here
@@ -153,7 +153,7 @@ void CTerrainEngine_Impl::Erode(uint32_t uLayerIndex, uint32_t uSteps, uint32_t 
 
     Internal_TrackMemoryLoad(-sizeof(FLOAT_TYPE) * m_uHeight * m_uWidth, EMemoryUseTypes::MethodMemory);
     Internal_TrackMemoryLoad(-sizeof(glm::vec4) * m_uHeight * m_uWidth, EMemoryUseTypes::MethodMemory);
-    Internal_TrackMemoryLoad(-sizeof(float) * 8 * m_uHeight * m_uWidth, EMemoryUseTypes::MethodMemory);
+    Internal_TrackMemoryLoad(-sizeof(FLOAT_TYPE) * 16 * m_uHeight * m_uWidth, EMemoryUseTypes::MethodMemory);
 }
 
 void CTerrainEngine_Impl::ErodeByNormals(uint32_t uLayerIndex, uint32_t uSteps)

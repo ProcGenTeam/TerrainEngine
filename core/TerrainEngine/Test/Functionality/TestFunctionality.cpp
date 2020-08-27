@@ -73,7 +73,7 @@ int main(int argc, char** argv)
             //std::cout << view->size() << std::endl;
 
             //terrainEngine.ErodeByNormals(0, 8);
-            terrainEngine.Erode(0, 1);
+            terrainEngine.Erode(0, 1000);
 
             // for(uint32_t x = 0; x < 5; ++x)
             // {

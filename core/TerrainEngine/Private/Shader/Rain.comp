@@ -1,7 +1,7 @@
 #version 450
 //#extension GL_ARB_seperate_shader_objects : enable
 
-layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+layout (local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 
 struct InfoBuffer
 {
@@ -12,6 +12,7 @@ struct InfoBuffer
     float fSoilSoftness;
     float fRainCoeff;
     float fSedimentCapacity;
+    float fWaterLevel;
 };
 
 struct FHydFloatCombiner
@@ -71,7 +72,9 @@ void main()
     }
 
     uint gIdx = gl_GlobalInvocationID.y * shaderInfo.uWidth + gl_GlobalInvocationID.x;
+
     waterLevel[gIdx] += shaderInfo.fRainCoeff * pow(heightMap[gIdx], 1);
+
     //heightMap[gIdx] = waterLevel[gIdx]; //0.225f * pow(heightMap[gIdx], 6);
     
 }

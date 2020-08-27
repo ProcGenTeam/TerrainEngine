@@ -26,13 +26,23 @@ struct FShaderInfo
     float fSoilSoftness;
     float fRainCoeff;
     float fSedimentCapacity;
-    //float fWaterLevel;
+    float fWaterLevel;
 };
 
 struct FShaderBytecode
 {
     std::vector<uint32_t> vBytecode;
     VkShaderModule vkShaderModule;
+};
+
+enum class EGPUBufferTypes: uint32_t
+{
+    GPU_ONLY,
+    COPY_SOURCE,
+    COPY_DEST,
+    COPY_BOTH,
+
+    TOTAL_BUFFER_TYPES
 };
 
 class CGPUHydraulicErosion : public CHydraulicErosion
@@ -129,7 +139,8 @@ class CGPUHydraulicErosion : public CHydraulicErosion
         void CreateVKInstance();
         void CreateDevice();
         void CreatePhysicalDevice();
-        void CreateBuffer(FDeviceBackedBuffer &stBuffer, uint64_t uSize);
+        void CreateBuffer(FDeviceBackedBuffer &stBuffer, uint64_t uSize, EGPUBufferTypes eBufferType = EGPUBufferTypes::GPU_ONLY);
+        void CreateBuffer(FDeviceBackedBuffer &stBuffer, uint64_t uSize, uint64_t wantedFlags, EGPUBufferTypes eBufferType);
         void CreateShaderModules(std::filesystem::path shaderPath);
         void CreateDescSetLayout();
         void CreateDescSet();
@@ -146,7 +157,7 @@ class CGPUHydraulicErosion : public CHydraulicErosion
         CGPUHydraulicErosion(int32_t iOverscan, uint32_t uSeed, int32_t iOffsetX, int32_t iOffsetY, FLOAT_TYPE fWaterLevel = 0.1f);
         ~CGPUHydraulicErosion();
 
-        virtual void Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t uHeight, uint32_t uWidth, float fScale = 0.1f) override;
+        virtual void Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t uHeight, uint32_t uWidth, uint32_t uSteps, float fScale = 0.1f) override;
         virtual void ErodeByNormals(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t uHeight, uint32_t uWidth, float fScale = 0.1f) override;
         //virtual void Erode(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t uHeight, uint32_t uWidth, float fScale = 0.1f);
 };

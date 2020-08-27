@@ -1,7 +1,8 @@
 #version 450
 //#extension GL_ARB_seperate_shader_objects : enable
+#extension GL_EXT_control_flow_attributes : enable
 
-layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+layout (local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 
 struct InfoBuffer
 {
@@ -12,6 +13,7 @@ struct InfoBuffer
     float fSoilSoftness;
     float fRainCoeff;
     float fSedimentCapacity;
+    float fWaterLevel;
 };
 
 struct FHydFloatCombiner
@@ -85,6 +87,7 @@ void main()
     waterLevel[gIdx] -= delayedWaterLevel[gIdx];
     sedimentLevel[gIdx] -= delayedSedimentLevel[gIdx];
 
+    [[unroll]]
     for(int sp = 0; sp < 8; ++sp)
     {
         waterLevel[gIdx].x += waterMap[gIdx].values[sp];
@@ -100,6 +103,9 @@ void main()
         sedimentMap[gIdx].values[sp] = 0;
     }
 
+    // Disable Sediment Pickup
+    delayedWaterLevel[gIdx] *= shaderInfo.fWaterLevel > heightMap[gIdx] ? 0.f : 1.f;
+
     // Deposit!
     heightMap[gIdx] += shaderInfo.fDepositionRate * sedimentLevel[gIdx];
     sedimentLevel[gIdx] -= shaderInfo.fDepositionRate * sedimentLevel[gIdx];
@@ -112,28 +118,37 @@ void main()
     waterLevel[gIdx] = max(waterLevel[gIdx], 0.f);
     sedimentLevel[gIdx] = max(sedimentLevel[gIdx], 0.f);
 
-
     float sedCapacity = shaderInfo.fSedimentCapacity * waterLevel[gIdx];
-    if(sedimentLevel[gIdx] >= sedCapacity)
-    {
-        // Deposit everything that is over cap
-        float ssedCapacity = shaderInfo.fDepositionRate * (sedimentLevel[gIdx] - sedCapacity);
-        heightMap[gIdx] += ssedCapacity;
-        sedimentLevel[gIdx] -= ssedCapacity;
-    }
-    // If we aren't over the limit, are we under it?
-    else if(abs(delayedWaterLevel[gIdx]) >= 0.000000125f)
-    {
-        // Pick up the sediment
-        //float rngMod = 1 - 0.1 * (double(uint64_t(6364136223846793005 * GetWorldXYS(x, uWidth, s) + 1442695040888963407)) / double(UINT64_MAX));
 
-        //printf("%f\n", rngMod);
+    float sedimentMoving = (abs(delayedWaterLevel[gIdx]) >= 0.000000125f) ? shaderInfo.fSoilSoftness * (1.f - pow(heightMap[gIdx],2)) * (sedCapacity - sedimentLevel[gIdx]) : 0;
+    sedimentMoving = sedimentLevel[gIdx] >= sedCapacity ? shaderInfo.fDepositionRate * (sedimentLevel[gIdx] - sedCapacity) * -1.f : sedimentMoving;
 
-        float ssedCapacity = shaderInfo.fSoilSoftness * (1.f - pow(heightMap[gIdx],2)) * (sedCapacity - sedimentLevel[gIdx]);// * rngMod;
-        //deltaS = std::max(0.001f, sedCapacity);
-        sedimentLevel[gIdx] += ssedCapacity;
-        heightMap[gIdx] -= ssedCapacity;
-    }
+    float waterDelta = (shaderInfo.fWaterLevel - (waterLevel[gIdx] + heightMap[gIdx]));
+    waterLevel[gIdx] += waterDelta < 0 ? 0 : waterDelta;
+
+    sedimentLevel[gIdx] += sedimentMoving;
+    heightMap[gIdx] -= sedimentMoving;
+
+    // if(sedimentLevel[gIdx] >= sedCapacity)
+    // {
+    //     // Deposit everything that is over cap
+    //     float ssedCapacity = shaderInfo.fDepositionRate * (sedimentLevel[gIdx] - sedCapacity);
+    //     heightMap[gIdx] += ssedCapacity;
+    //     sedimentLevel[gIdx] -= ssedCapacity;
+    // }
+    // // If we aren't over the limit, are we under it?
+    // else if(abs(delayedWaterLevel[gIdx]) >= 0.000000125f)
+    // {
+    //     // Pick up the sediment
+    //     //float rngMod = 1 - 0.1 * (double(uint64_t(6364136223846793005 * GetWorldXYS(x, uWidth, s) + 1442695040888963407)) / double(UINT64_MAX));
+
+    //     //printf("%f\n", rngMod);
+
+    //     float ssedCapacity = shaderInfo.fSoilSoftness * (1.f - pow(heightMap[gIdx],2)) * (sedCapacity - sedimentLevel[gIdx]);// * rngMod;
+    //     //deltaS = std::max(0.001f, sedCapacity);
+    //     sedimentLevel[gIdx] += ssedCapacity;
+    //     heightMap[gIdx] -= ssedCapacity;
+    // }
 
     // Reset the delayed amount
     delayedWaterLevel[gIdx] = 0;

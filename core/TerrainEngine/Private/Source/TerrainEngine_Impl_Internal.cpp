@@ -123,39 +123,48 @@ void CTerrainEngine_Impl::Internal_Erode(uint32_t uLayerIndex, uint32_t uSteps, 
     uFilterSize = uFilterSize ? uFilterSize : m_uFilterSize;
 
     auto iVec = this->m_vpvData[uLayerIndex];
-    auto oVec = std::make_shared<std::vector<FLOAT_TYPE>>(std::vector<FLOAT_TYPE>(m_uHeight * m_uWidth));
-    oVec->resize(m_uHeight * m_uWidth);
+    //auto oVec = std::make_shared<std::vector<FLOAT_TYPE>>(std::vector<FLOAT_TYPE>(m_uHeight * m_uWidth));
+    //oVec->resize(m_uHeight * m_uWidth);
 
-    auto oVecData = GetInner(oVec);
+    //auto oVecData = GetInner(oVec);
     auto iVecData = GetInner(iVec);
 
     auto eroder = Internal_GetBestEroder(uFilterSize, 0, m_iXOffset, m_iYOffset ,m_fWaterLevel);
 
-// #ifdef TE_USE_GPU
-//     auto eroder = Internal_GetBestEroder(uFilterSize, 0, m_fWaterLevel);
-// #else
-//     auto eroder = CHydraulicErosion(uFilterSize, 0, m_fWaterLevel);
-// #endif
-    // Buffer Rotations
-    FLOAT_TYPE* l_pBuffers[2] = {iVecData, oVecData};
-    std::shared_ptr<std::vector<FLOAT_TYPE>> l_pBufferPtrs[2] = {iVec, oVec};
-    uint8_t uBufferIndex = 0;
+    eroder->Erode(
+        iVecData,
+        iVecData,
+        m_uHeight,
+        m_uWidth,
+        uSteps,
+        0.1f
+    );
 
-    for(uint32_t step = 0; step < uSteps; ++step)
-    {
-        eroder->Erode(
-            l_pBuffers[uBufferIndex],
-            l_pBuffers[!uBufferIndex],
-            m_uHeight,
-            m_uWidth,
-            0.1f
-        );
+// // #ifdef TE_USE_GPU
+// //     auto eroder = Internal_GetBestEroder(uFilterSize, 0, m_fWaterLevel);
+// // #else
+// //     auto eroder = CHydraulicErosion(uFilterSize, 0, m_fWaterLevel);
+// // #endif
+//     // Buffer Rotations
+//     FLOAT_TYPE* l_pBuffers[2] = {iVecData, oVecData};
+//     std::shared_ptr<std::vector<FLOAT_TYPE>> l_pBufferPtrs[2] = {iVec, oVec};
+//     uint8_t uBufferIndex = 0;
 
-        // Flip the buffer
-        uBufferIndex = !uBufferIndex;
-    }
+//     for(uint32_t step = 0; step < uSteps; ++step)
+//     {
+//         eroder->Erode(
+//             l_pBuffers[uBufferIndex],
+//             l_pBuffers[!uBufferIndex],
+//             m_uHeight,
+//             m_uWidth,
+//             0.1f
+//         );
 
-    this->m_vpvData[uLayerIndex] = l_pBufferPtrs[uBufferIndex];
+//         // Flip the buffer
+//         uBufferIndex = !uBufferIndex;
+//     }
+
+//     this->m_vpvData[uLayerIndex] = l_pBufferPtrs[uBufferIndex];
 }
 
 void CTerrainEngine_Impl::Internal_ErodeByNormals(uint32_t uLayerIndex, uint32_t uSteps)
