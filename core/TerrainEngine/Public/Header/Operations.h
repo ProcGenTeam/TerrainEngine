@@ -16,6 +16,7 @@ enum class EOperationTypes : uint32_t
     Erode,
     ErodeByNormals,
     Perlin,
+    FractalPerlin,
 
     CreateLayer,
     DestroyLayer,

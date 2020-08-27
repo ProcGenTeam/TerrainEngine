@@ -66,6 +66,11 @@ void TerrainEngine::CTerrainEngine::Perlin(uint32_t uLayerIndex, float fScale)
     Super->Perlin(uLayerIndex, fScale);
 }
 
+void TerrainEngine::CTerrainEngine::FractalPerlin(uint32_t uLayerIndex, float fScale, uint32_t uLevels)
+{
+    Super->FractalPerlin(uLayerIndex, fScale, uLevels);
+}
+
 ////// ////// //////
 // Layer Control
 //

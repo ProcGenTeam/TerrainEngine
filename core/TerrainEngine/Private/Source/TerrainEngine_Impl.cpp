@@ -170,6 +170,23 @@ void CTerrainEngine_Impl::Perlin(uint32_t uLayerIndex, float fScale)
     }
 }
 
+void CTerrainEngine_Impl::FractalPerlin(uint32_t uLayerIndex, float fScale, uint32_t uLevels)
+{
+    if (this->m_bImmediateMode)
+    {
+        Internal_FractalPerlin(uLayerIndex, fScale, uLevels);
+    }
+    else
+    {
+        FOperation op{};
+        op.OpType = EOperationTypes::Perlin;
+        op.u32Arg1 = uLayerIndex;
+        op.u32Arg2 = *reinterpret_cast<uint32_t *>(&fScale);
+        op.u32Arg3 = uLevels;
+        m_vQueue.push_back(std::move(op));
+    }
+}
+
 ////// ////// //////
 // Layer Control
 //

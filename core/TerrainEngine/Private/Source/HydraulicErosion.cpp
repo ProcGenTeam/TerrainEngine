@@ -554,7 +554,13 @@ void CHydraulicErosion::TestFunc(FLOAT_TYPE *pHeight, FLOAT_TYPE *pOut, uint32_t
 
                 // auto deltaS = m_fSoilSoftness * pTerrain[x] * (1-std::pow(pHeight[x],2)) * (sedCapacity -
                 // m_vv4WaterMap[x].y);// * rngMod;
-                auto deltaS = m_fSoilSoftness * pTerrain[x] * (sedCapacity - m_vv4WaterMap[x].y); // * rngMod;
+                float softness = m_fSoilSoftness;
+                if (pTerrain)
+                {
+                    softness = pTerrain[x];
+                }
+
+                auto deltaS = softness * (sedCapacity - m_vv4WaterMap[x].y); // * rngMod;
                 // deltaS = std::max(0.001f, sedCapacity);
                 m_vv4WaterMap[x].y += deltaS;
                 pHeight[x] -= deltaS;

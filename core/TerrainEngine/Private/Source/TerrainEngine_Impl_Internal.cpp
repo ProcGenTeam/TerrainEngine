@@ -44,6 +44,7 @@ void CTerrainEngine_Impl::Internal_LazyEvaluate(FOperation &stOp)
         AutoCase(DestroyLayer, stOp.u32Arg1);
 
         AutoCase(Perlin, stOp.u32Arg1, *reinterpret_cast<float *>(&stOp.u32Arg2));
+        AutoCase(FractalPerlin, stOp.u32Arg1, *reinterpret_cast<float *>(&stOp.u32Arg2), stOp.u32Arg3);
         AutoCase(Erode, stOp.u32Arg1, stOp.u32Arg2, stOp.u32Arg3, stOp.u32Arg4);
         AutoCase(ErodeByNormals, stOp.u32Arg1, stOp.u32Arg2);
 
@@ -209,6 +210,35 @@ void CTerrainEngine_Impl::Internal_Perlin(uint32_t uLayerIndex, float fScale)
         {
             auto fx = (x - m_uOverScan + m_iXOffset) * oneOverWidth * m_fGlobalScale;
             auto NormalVal = pGen.Generate(fx * 5 * fScale, fy * 5 * fScale, 0.01);
+
+            rVec[my + x] = NormalVal;
+        }
+    }
+}
+
+void CTerrainEngine_Impl::Internal_FractalPerlin(uint32_t uLayerIndex, float fScale, uint32_t uLevels)
+{
+    if (!this->Internal_IsIndexSafe(uLayerIndex))
+    {
+        return;
+    }
+
+    auto pGen = CPerlinNoiseGen(0);
+
+    auto rVec = GetInner(this->m_vpvData[uLayerIndex]);
+    auto oneOverHeight = 1.0 / (m_uHeight - m_uOverScan);
+    auto oneOverWidth = 1.0 / (m_uWidth - m_uOverScan);
+
+#pragma omp parallel for
+    for (int64_t y = 0; y < m_uHeight; ++y)
+    {
+        auto my = y * m_uWidth;
+        auto fy = (y - m_uOverScan + m_iYOffset) * oneOverHeight * m_fGlobalScale;
+
+        for (int64_t x = 0; x < m_uWidth; ++x)
+        {
+            auto fx = (x - m_uOverScan + m_iXOffset) * oneOverWidth * m_fGlobalScale;
+            auto NormalVal = pGen.Fractal(fx * 5 * fScale, fy * 5 * fScale, 0.01, uLevels);
 
             rVec[my + x] = NormalVal;
         }

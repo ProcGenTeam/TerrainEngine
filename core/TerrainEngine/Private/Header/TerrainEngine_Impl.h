@@ -63,6 +63,7 @@ protected:
                                 uint32_t uFilterSize);
     virtual void Internal_ErodeByNormals(uint32_t uLayerIndex, uint32_t uSteps);
     virtual void Internal_Perlin(uint32_t uLayerIndex, float fScale);
+    virtual void Internal_FractalPerlin(uint32_t uLayerIndex, float fScale, uint32_t uLevels);
 
     ////// ////// //////
     // Private Layer Control
@@ -117,6 +118,7 @@ public:
                        uint32_t uFilterSize = 0);
     virtual void ErodeByNormals(uint32_t uLayerIndex, uint32_t uSteps);
     virtual void Perlin(uint32_t uLayerIndex, float fScale);
+    virtual void FractalPerlin(uint32_t uLayerIndex, float fScale, uint32_t uLevels);
 
     ////// ////// //////
     // Layer Control

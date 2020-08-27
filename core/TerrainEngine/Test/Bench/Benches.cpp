@@ -40,7 +40,7 @@ int main(int argc, char **argv)
 
     // //terrainEngine.MulLayerScalar(0,0,0);
     terrainEngine.Perlin(1, 25);
-    terrainEngine.Perlin(2, 4);
+    terrainEngine.FractalPerlin(2, 4, 128);
     terrainEngine.MulLayerScalar(1, 1, 0.025);
     terrainEngine.MulLayers(1, 1, 2);
     terrainEngine.AddLayers(0, 0, 1);

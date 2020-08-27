@@ -21,8 +21,8 @@ int main(int argc, char **argv)
         terrainEngine.EnableImmediateMode();
 
         terrainEngine.CreateLayer();
-        terrainEngine.Perlin(0, 1);
-        terrainEngine.Perlin(1, 2.5);
+        terrainEngine.FractalPerlin(0, 1, 128);
+        terrainEngine.FractalPerlin(1, 2.5, 32);
         terrainEngine.MulLayers(0, 0, 1);
 
         terrainEngine.CreateLayer();
@@ -46,8 +46,8 @@ int main(int argc, char **argv)
 
         terrainEngine.MulLayerScalar(0, 0, 1.5);
 
-        // // terrainEngine.MulLayerScalar(0,0,0);
-        terrainEngine.Perlin(1, 5);
+        // terrainEngine.MulLayerScalar(0,0,0);
+        terrainEngine.FractalPerlin(1, 1, 16);
         terrainEngine.Perlin(2, 10);
         terrainEngine.MulLayers(1, 1, 1);
         terrainEngine.MulLayers(1, 1, 2);
