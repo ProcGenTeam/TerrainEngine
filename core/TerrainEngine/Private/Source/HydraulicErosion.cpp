@@ -17,11 +17,18 @@
 
 CHydraulicErosion::CHydraulicErosion(int32_t iOverscan, uint32_t uSeed, int32_t iOffsetX, int32_t iOffsetY,
                                      FLOAT_TYPE fWaterLevel)
-    : m_iOverscan(iOverscan), m_iOffsetX(iOffsetX), m_iOffsetY(iOffsetY), m_mtRandGen(std::mt19937_64(uSeed)),
-      m_distNormal(std::normal_distribution<float>(1.0, 0.1)), m_fWaterLevel(fWaterLevel), m_fEvaporation(0.01f),
+    : m_iOverscan(iOverscan),
+      m_iOffsetX(iOffsetX),
+      m_iOffsetY(iOffsetY),
+      m_mtRandGen(std::mt19937_64(uSeed)),
+      m_distNormal(std::normal_distribution<float>(1.0, 0.1)),
+      m_fWaterLevel(fWaterLevel),
+      m_fEvaporation(0.01f),
       m_fSedimentCapacity(1.f),
       // m_fDeposition(0.025f),
-      m_fSoilSoftness(0.3f), m_fDeposition(0.3f / 6), m_fWorldVerticalScale(4000)
+      m_fSoilSoftness(0.3f),
+      m_fDeposition(0.3f / 6),
+      m_fWorldVerticalScale(4000)
 {
 }
 

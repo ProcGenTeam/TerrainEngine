@@ -8,9 +8,16 @@
 
 CTerrainEngine_Impl::CTerrainEngine_Impl(FLOAT_TYPE fWaterLevel, uint32_t uWidth, uint32_t uHeight, int32_t iXOffset,
                                          int32_t iYOffset, float fGlobalScale, uint32_t uOverscan, uint32_t uFilterSize)
-    : m_fWaterLevel(fWaterLevel), m_uOverScan(std::max(uOverscan, uFilterSize * 2)), m_uWidth(uWidth + uOverscan * 2),
-      m_uHeight(uHeight + uOverscan * 2), m_iXOffset(iXOffset), m_iYOffset(iYOffset), m_fGlobalScale(fGlobalScale),
-      m_bImmediateMode(false), m_uFilterSize(uFilterSize), m_uStackPointer(0)
+    : m_fWaterLevel(fWaterLevel),
+      m_uOverScan(std::max(uOverscan, uFilterSize * 2)),
+      m_uWidth(uWidth + uOverscan * 2),
+      m_uHeight(uHeight + uOverscan * 2),
+      m_iXOffset(iXOffset),
+      m_iYOffset(iYOffset),
+      m_fGlobalScale(fGlobalScale),
+      m_bImmediateMode(false),
+      m_uFilterSize(uFilterSize),
+      m_uStackPointer(0)
 {
     // Create Default Layer
     auto temp = std::make_shared<std::vector<FLOAT_TYPE>>(std::vector<FLOAT_TYPE>(m_uHeight * m_uWidth));
@@ -26,7 +33,10 @@ CTerrainEngine_Impl::CTerrainEngine_Impl(FLOAT_TYPE fWaterLevel, uint32_t uWidth
 
 CTerrainEngine_Impl::CTerrainEngine_Impl(FLOAT_TYPE fWaterLevel, std::unique_ptr<std::vector<FLOAT_TYPE>> vWorld,
                                          uint32_t uWidth, float fScale, uint32_t uOverscan)
-    : m_fWaterLevel(fWaterLevel), m_uOverScan(uOverscan), m_uWidth(uWidth), m_fGlobalScale(fScale),
+    : m_fWaterLevel(fWaterLevel),
+      m_uOverScan(uOverscan),
+      m_uWidth(uWidth),
+      m_fGlobalScale(fScale),
       m_bImmediateMode(false)
 {
     this->m_uHeight = vWorld->size() / uWidth;
